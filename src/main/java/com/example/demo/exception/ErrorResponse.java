@@ -1,5 +1,6 @@
 package com.example.project.core.exception;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.Date;
@@ -7,6 +8,7 @@ import java.util.Map;
 
 @Getter
 @Setter
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ErrorResponse {
     private Date timestamp;
     private int status;
