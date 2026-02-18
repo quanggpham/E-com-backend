@@ -1,8 +1,10 @@
 package com.example.demo.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Map;
 
@@ -18,11 +20,14 @@ public class ApiResponse<T> {
     private T data;
     private String path;
     private Map<String, String> errors;
-    private Date timestamp;
 
-    public ApiResponse(int status, String message) {
-        this.status = status;
-        this.message = message;
-        this.timestamp = new Date();
-    }
+    @Builder.Default
+//    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
+    private LocalDateTime timestamp = LocalDateTime.now();
+
+//    public ApiResponse(int status, String message) {
+//        this.status = status;
+//        this.message = message;
+//        this.timestamp = new Date();
+//    }
 }

@@ -30,7 +30,6 @@ public class CategoryController {
         CategoryResponse categoryResponse = categoryService.create(request);
 
         ApiResponse<CategoryResponse> response = ApiResponse.<CategoryResponse>builder()
-                .timestamp(new Date())
                 .status(201)
                 .message("Tạo danh mục thành công")
                 .data(categoryResponse)
@@ -43,7 +42,6 @@ public class CategoryController {
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAll() {
         List<CategoryResponse> categories = categoryService.getAll();
         ApiResponse<List<CategoryResponse>> response = ApiResponse.<List<CategoryResponse>>builder()
-                .timestamp(new Date())
                 .status(200)
                 .message("Lấy danh sách thành công")
                 .data(categories)
@@ -56,7 +54,6 @@ public class CategoryController {
     public ResponseEntity<ApiResponse<CategoryResponse>> getById(@PathVariable Long id) {
         CategoryResponse categoryResponse = categoryService.getById(id);
         ApiResponse<CategoryResponse> response = ApiResponse.<CategoryResponse>builder()
-                .timestamp(new Date())
                 .status(200)
                 .message("Lấy chi tiết category thành công")
                 .data(categoryResponse)
@@ -69,7 +66,6 @@ public class CategoryController {
         ApiResponse<CategoryResponse> response = ApiResponse.<CategoryResponse>builder()
                 .status(200)
                 .data(categoryService.updateById(id, request))
-                .timestamp(new Date())
                 .message("Update category thành công.")
                 .build();
         return ResponseEntity.status(200).body(response);
