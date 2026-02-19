@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -25,7 +26,7 @@ public class Cart {
     private User user;
 
     @OneToMany(mappedBy = "cart", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CartItem> cartItem;
+    private List<CartItem> items = new ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -34,4 +35,14 @@ public class Cart {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public void addItem(CartItem item) {
+        this.items.add(item);
+        item.setCart(this);
+    }
+
+    public void removeItem(CartItem item) {
+        this.items.remove(item);
+        item.setCart(null);
+    }
 }

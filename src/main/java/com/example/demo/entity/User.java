@@ -45,6 +45,9 @@ public class User {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
     private List<CouponUsage> couponUsage;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Cart cart;
+
     @Column(name = "email", unique = true, nullable = false, length = 100)
     @Email(message = "email khong dugn dinh dang")
     @NotBlank(message = "email khong duoc de trong")

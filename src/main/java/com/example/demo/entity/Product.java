@@ -22,8 +22,8 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Table(name = "products")
-@Where(clause = "delete_at IS NULL")
-@SQLDelete(sql = "UPDATE products SET delete_at = CURRENT_TIMESTAMP WHERE id = ?")
+@Where(clause = "deleted_at IS NULL")
+@SQLDelete(sql = "UPDATE products SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -57,10 +57,10 @@ public class Product {
     @Column(name = "thumbnail_url", length = 300)
     private String thumbnailUrl;
 
-    @Column(name = "is_active",  nullable = false)
+    @Column(name = "is_active")
     private Boolean isActive;
 
-    @Column(name = "delete_at")
+    @Column(name = "deleted_at")
     private LocalDateTime deleteAt;
 
     @UpdateTimestamp
@@ -68,6 +68,6 @@ public class Product {
     private LocalDateTime updatedAt;
 
     @CreationTimestamp
-    @Column(name = "create_at")
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 }
