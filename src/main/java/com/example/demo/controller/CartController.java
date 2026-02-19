@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.request.AddToCartRequest;
 import com.example.demo.dto.response.ApiResponse;
+import com.example.demo.dto.response.CartResponse;
 import com.example.demo.service.CartService;
 import com.example.demo.service.CategoryService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,19 @@ public class CartController {
                 .body(ApiResponse.<Void>builder()
                         .status(HttpStatus.OK.value())
                         .message("Thêm vào giỏ hàng thành công!")
+                        .build());
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<CartResponse>> getCart(
+            @RequestParam Long userId // tam thoi thoi
+    ) {
+        return ResponseEntity.
+                status(HttpStatus.OK)
+                .body(ApiResponse.<CartResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Get giỏ hàng thành công")
+                        .data(cartService.getCart(userId))
                         .build());
     }
 }

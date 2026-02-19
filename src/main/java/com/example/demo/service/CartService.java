@@ -1,6 +1,8 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.request.AddToCartRequest;
+import com.example.demo.dto.response.CartItemResponse;
+import com.example.demo.dto.response.CartResponse;
 import com.example.demo.entity.Cart;
 import com.example.demo.entity.CartItem;
 import com.example.demo.entity.Product;
@@ -13,7 +15,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -51,5 +57,45 @@ public class CartService {
             cart.addItem(item);
         }
         cartRepository.save(cart);
+    }
+
+    public CartResponse getCart(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        Cart cart = cartRepository.findByUser(user).orElse(null);
+
+        if (cart == null || cart.getItems().isEmpty()) {
+            return CartResponse.builder()
+                    .totalAmt(BigDecimal.ZERO)
+                    .items(new ArrayList<>())
+                    .build();
+        }
+
+        List<CartItemResponse> itemDtos = cart.getItems().stream()
+                .map(item -> {
+                    BigDecimal subTotal = item.getProduct().getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+                    return  CartItemResponse.builder()
+                            .itemId(item.getId())
+                            .productId(item.getProduct().getId())
+                            .productName(item.getProduct().getName())
+                            .thumbnailUrl(item.getProduct().getThumbnailUrl())
+                            .quantity(item.getQuantity())
+                            .price(item.getProduct().getPrice())
+                            .subTotal(subTotal)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        BigDecimal totalPrice = itemDtos.stream()
+                .map(CartItemResponse::getSubTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+
+        return CartResponse.builder()
+                .items(itemDtos)
+                .totalAmt(totalPrice)
+                .cartId(cart.getId())
+                .build();
     }
 }

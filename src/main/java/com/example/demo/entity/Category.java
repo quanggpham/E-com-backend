@@ -37,8 +37,8 @@ public class Category {
 //    @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent", cascade = CascadeType.ALL)
 //    private List<Category> children;
 
-    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
-    private List<Product> products;
+//    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
+//    private List<Product> products;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
