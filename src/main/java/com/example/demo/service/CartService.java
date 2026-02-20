@@ -101,6 +101,7 @@ public class CartService {
                 .build();
     }
 
+    @Transactional
     public void updateQuantity(Long userId, UpdateCartRequest request) {
         User user =  userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
@@ -128,5 +129,40 @@ public class CartService {
             }
 
         cartRepository.save(cart);        }
+    }
+
+    @Transactional
+    public void deleteItem(Long userId, Long productId) {
+        User user =  userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        Cart cart = cartRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giỏ hàng"));
+
+        Product product =  productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
+
+        CartItem cartItem = cart.getItems().stream()
+                .filter(item -> item.getProduct().getId().equals(product.getId()))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("Không thấy sản phẩm trong giỏ hàng"));
+
+        cart.removeItem(cartItem);
+        cartRepository.save(cart);
+    }
+
+    public void clear(Long userId) {
+        User user =  userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        Cart cart = cartRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giỏ hàng"));
+
+        List<CartItem> items =  new ArrayList<>(cart.getItems());
+
+        for (CartItem i : items) {
+            cart.removeItem(i);
+        }
+        cartRepository.save(cart);
     }
 }

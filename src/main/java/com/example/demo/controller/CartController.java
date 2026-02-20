@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class CartController {
     private final CartService cartService;
-    private final CategoryService categoryService;
 
     @PostMapping("/add")
     public ResponseEntity<ApiResponse<Void>> addToCart(
@@ -47,7 +46,7 @@ public class CartController {
                         .build());
     }
 
-    @PutMapping
+    @PutMapping("/item")
     public ResponseEntity<ApiResponse<Void>> updateQuantity(
             @RequestParam Long userId,
             @RequestBody UpdateCartRequest request
@@ -59,4 +58,30 @@ public class CartController {
                         .status(HttpStatus.OK.value())
                         .build());
     }
+
+    @DeleteMapping("/item/{productId}")
+    public ResponseEntity<ApiResponse<Void>> deleteItem(
+            @RequestParam Long userId,
+            @PathVariable Long productId
+
+    ) {
+        cartService.deleteItem(userId, productId);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Xóa sản phẩm thành công")
+                        .build());
+    }
+
+    @DeleteMapping("/clear")
+    public ResponseEntity<ApiResponse<Void>> clearCart(@RequestParam Long userId) {
+        cartService.clear(userId);
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Giỏ hàng đã được dọn sạch")
+                        .build()
+        );
+    }
+
 }
