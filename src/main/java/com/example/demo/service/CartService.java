@@ -1,12 +1,14 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.request.AddToCartRequest;
+import com.example.demo.dto.request.UpdateCartRequest;
 import com.example.demo.dto.response.CartItemResponse;
 import com.example.demo.dto.response.CartResponse;
 import com.example.demo.entity.Cart;
 import com.example.demo.entity.CartItem;
 import com.example.demo.entity.Product;
 import com.example.demo.entity.User;
+import com.example.demo.exception.BusinessException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.CartRepository;
 import com.example.demo.repository.ProductRepository;
@@ -97,5 +99,34 @@ public class CartService {
                 .totalAmt(totalPrice)
                 .cartId(cart.getId())
                 .build();
+    }
+
+    public void updateQuantity(Long userId, UpdateCartRequest request) {
+        User user =  userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        Cart cart = cartRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giỏ hàng"));
+
+        Product product = productRepository.findById(request.getProductId())
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "id", request.getProductId()));
+
+        Optional<CartItem> cartItem = Optional.ofNullable(cart.getItems().stream()
+                .filter(i -> i.getProduct().getId().equals(product.getId()))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("Sản phâẩm chưa có trong giỏ hàng")));
+
+        if (cartItem.isPresent()) {
+            CartItem item = cartItem.get();
+            if (request.getQuantity() == 0) {
+                cart.removeItem(item);
+            } else {
+                if (product.getStockQuantity() <  request.getQuantity()) {
+                    throw new BusinessException("Số lượng sản phẩm còn lại không đủ");
+                }
+                item.setQuantity(request.getQuantity());
+            }
+
+        cartRepository.save(cart);        }
     }
 }

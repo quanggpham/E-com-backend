@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.request.AddToCartRequest;
+import com.example.demo.dto.request.UpdateCartRequest;
 import com.example.demo.dto.response.ApiResponse;
 import com.example.demo.dto.response.CartResponse;
 import com.example.demo.service.CartService;
@@ -43,6 +44,19 @@ public class CartController {
                         .status(HttpStatus.OK.value())
                         .message("Get giỏ hàng thành công")
                         .data(cartService.getCart(userId))
+                        .build());
+    }
+
+    @PutMapping
+    public ResponseEntity<ApiResponse<Void>> updateQuantity(
+            @RequestParam Long userId,
+            @RequestBody UpdateCartRequest request
+    ) {
+        cartService.updateQuantity(userId, request);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.<Void>builder()
+                        .message("Cập nhật số lượng thành công")
+                        .status(HttpStatus.OK.value())
                         .build());
     }
 }
