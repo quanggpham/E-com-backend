@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ser.Serializers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -32,6 +33,19 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(UsernameNotFoundException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public com.example.project.core.exception.ErrorResponse handleUsernameNotFoundException(UsernameNotFoundException ex, WebRequest request) {
+
+        logger.warn("UsernameNotFound: Message= {}", ex.getMessage());
+        return new com.example.project.core.exception.ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                request.getDescription(false).replace("uri=", ""),
+                "Bad Request",
+                ex.getMessage()
+        );
+    }
+
     // loi nghiep vu
     @ExceptionHandler(BaseException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -45,6 +59,7 @@ public class GlobalExceptionHandler {
                 ex.getMessage()
         );
     }
+
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)

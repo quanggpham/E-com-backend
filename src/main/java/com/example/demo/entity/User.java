@@ -24,8 +24,8 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "username", nullable = false, unique = true, length = 50)
-    @NotBlank(message = "username khong duoc de trong")
+    @Column(name = "username", unique = true, length = 50)
+//    @NotBlank(message = "username khong duoc de trong")
     @Size(min = 3, max = 50, message = "user phai tu 3 den 50 ki tu")
     private String username;
 

@@ -4,27 +4,28 @@ import com.example.demo.dto.request.AddToCartRequest;
 import com.example.demo.dto.request.UpdateCartRequest;
 import com.example.demo.dto.response.ApiResponse;
 import com.example.demo.dto.response.CartResponse;
+import com.example.demo.security.UserPrincipal;
 import com.example.demo.service.CartService;
 import com.example.demo.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/cart")
+@RequestMapping("/api/v1/carts")
 @RequiredArgsConstructor
 public class CartController {
     private final CartService cartService;
 
     @PostMapping("/add")
     public ResponseEntity<ApiResponse<Void>> addToCart(
-//            @AuthenticationPrincipal UserPrincipal currentUser,
-            @RequestParam Long userId,
+            @AuthenticationPrincipal UserPrincipal currentUser,
             @RequestBody AddToCartRequest request
             )
     {
-        cartService.addToCart(userId, request);
+        cartService.addToCart(currentUser.getId(), request);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.<Void>builder()
@@ -35,23 +36,23 @@ public class CartController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<CartResponse>> getCart(
-            @RequestParam Long userId // tam thoi thoi
+            @AuthenticationPrincipal UserPrincipal currentUser
     ) {
         return ResponseEntity.
                 status(HttpStatus.OK)
                 .body(ApiResponse.<CartResponse>builder()
                         .status(HttpStatus.OK.value())
                         .message("Get giỏ hàng thành công")
-                        .data(cartService.getCart(userId))
+                        .data(cartService.getCart(currentUser.getId()))
                         .build());
     }
 
     @PutMapping("/item")
     public ResponseEntity<ApiResponse<Void>> updateQuantity(
-            @RequestParam Long userId,
+            @AuthenticationPrincipal UserPrincipal currentUser,
             @RequestBody UpdateCartRequest request
     ) {
-        cartService.updateQuantity(userId, request);
+        cartService.updateQuantity(currentUser.getId(), request);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.<Void>builder()
                         .message("Cập nhật số lượng thành công")
@@ -61,11 +62,11 @@ public class CartController {
 
     @DeleteMapping("/item/{productId}")
     public ResponseEntity<ApiResponse<Void>> deleteItem(
-            @RequestParam Long userId,
+            @AuthenticationPrincipal  UserPrincipal currentUser,
             @PathVariable Long productId
 
     ) {
-        cartService.deleteItem(userId, productId);
+        cartService.deleteItem(currentUser.getId(), productId);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.<Void>builder()
                         .status(HttpStatus.OK.value())
@@ -74,8 +75,8 @@ public class CartController {
     }
 
     @DeleteMapping("/clear")
-    public ResponseEntity<ApiResponse<Void>> clearCart(@RequestParam Long userId) {
-        cartService.clear(userId);
+    public ResponseEntity<ApiResponse<Void>> clearCart(@AuthenticationPrincipal UserPrincipal currentUser) {
+        cartService.clear(currentUser.getId());
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()
                         .status(HttpStatus.OK.value())
