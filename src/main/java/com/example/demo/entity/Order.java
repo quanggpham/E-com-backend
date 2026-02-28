@@ -9,6 +9,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -29,15 +30,18 @@ public class Order {
     private User user;
 
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<OrderDetail> orderDetail;
+//    @JsonManagedReference
+    @Builder.Default
+    private List<OrderDetail> orderDetails = new ArrayList<>();
 
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
-    @JsonManagedReference
-    private List<Payment> payment;
+//    @JsonManagedReference
+    @Builder.Default
+    private List<Payment> payment = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "order")
-    private List<CouponUsage> couponUsage;
+    private List<CouponUsage> couponUsage = new ArrayList<>();
 
     @Column(name = "fullname", nullable = false)
     private String fullName;
@@ -70,4 +74,9 @@ public class Order {
 //    private String couponCode;
 
 //    private LocalDateTime deliveryDate;
+
+    public void addOrderDetail(OrderDetail orderDetail) {
+        orderDetails.add(orderDetail);
+        orderDetail.setOrder(this);
+    }
 }

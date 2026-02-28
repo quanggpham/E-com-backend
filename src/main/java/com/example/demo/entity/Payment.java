@@ -1,5 +1,6 @@
 package com.example.demo.entity;
 
+import com.example.demo.enums.PaymentMethod;
 import com.example.demo.enums.PaymentStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
@@ -27,8 +28,9 @@ public class Payment {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false)
-    private String paymentMethod;
+    private PaymentMethod paymentMethod;
 
 
     @Column(name = "transaction_reference", unique = true)

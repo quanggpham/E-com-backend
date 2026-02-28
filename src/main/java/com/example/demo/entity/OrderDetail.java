@@ -20,7 +20,7 @@ public class OrderDetail {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
-    @JsonBackReference
+//    @JsonBackReference
     private Order order;
 
     @ManyToOne(fetch = FetchType.LAZY)
