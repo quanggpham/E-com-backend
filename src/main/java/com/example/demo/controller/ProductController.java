@@ -10,6 +10,7 @@ import com.example.demo.entity.Product;
 import com.example.demo.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -83,12 +84,15 @@ public class ProductController {
 //    }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> search(ProductSearchRequest request) {
+    public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> search(
+            ProductSearchRequest request,
+            Pageable pageable
+    ) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.<PageResponse<ProductResponse>>builder()
                         .status(HttpStatus.OK.value())
                         .message("Tìm kiếm thành công")
-                        .data(productService.search(request))
+                        .data(productService.search(request, pageable))
                         .build());
     }
 }

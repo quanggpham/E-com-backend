@@ -2,18 +2,22 @@ package com.example.demo.service;
 
 import com.example.demo.dto.request.CartItemRequest;
 import com.example.demo.dto.request.CheckoutRequest;
-import com.example.demo.dto.response.CartItemResponse;
 import com.example.demo.dto.response.OrderResponse;
+import com.example.demo.dto.response.PageResponse;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.OrderDetail;
 import com.example.demo.entity.Product;
 import com.example.demo.entity.User;
 import com.example.demo.enums.OrderStatus;
+import com.example.demo.exception.AccessDeniedException;
 import com.example.demo.exception.BusinessException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.mapper.OrderMapper;
 import com.example.demo.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,5 +83,95 @@ public class OrderService {
         cartItemRepository.deleteByUserIdAndProductIdIn(user.getId(), productIds);
 
         return orderMapper.toOrderResponse(savedOrder);
+    }
+
+    public PageResponse<OrderResponse> getAll(Pageable pageable) {
+        int size = pageable.getPageSize();
+        int validPageSize= Math.min(size, 50);
+
+         Pageable newPageable = PageRequest.of(pageable.getPageNumber(), validPageSize, pageable.getSort());
+
+        Page<Order> pageData= orderRepository.findAll(newPageable);
+        List<OrderResponse> response= pageData.getContent().stream()
+                .map(orderMapper::toOrderResponse)
+                .toList();
+
+        return PageResponse.<OrderResponse>builder()
+                .items(response)
+                .pageSize(pageData.getSize())
+                .totalPages(pageData.getTotalPages())
+                .totalElements(pageData.getTotalElements())
+                .currentPage(pageData.getNumber() + 1)
+                .build();
+    }
+
+    public OrderResponse getById(Long orderId, Long userId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
+
+        if (!order.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("Bạn không có quyền truy cập");
+        }
+
+        return orderMapper.toOrderResponse(order);
+    }
+
+    @Transactional
+    public void cancelOrder(Long orderId, Long userId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
+
+        if (!order.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("Bạn không có quyền truy cập");
+        }
+
+        if (!order.getStatus().equals(OrderStatus.PENDING)) {
+            throw new BusinessException("Chỉ đơn hàng đang chờ xác nhận mới có thể hủy");
+        }
+        order.setStatus(OrderStatus.CANCELLED);
+        List<OrderDetail> orderDetails = order.getOrderDetails();
+
+        for (OrderDetail item : orderDetails) {
+            Product product = item.getProduct();
+            product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+        }
+
+        orderRepository.save(order);
+    }
+
+    public PageResponse<OrderResponse> getAllByUserId(Long userId, Pageable pageable) {
+        int size = pageable.getPageSize();
+        int validPageSize= Math.min(size, 50);
+
+        Pageable finalPageable = PageRequest.of(pageable.getPageNumber(), validPageSize, pageable.getSort());
+        Page<Order> pageData= orderRepository.findAllByUserId(userId, finalPageable);
+
+        List<OrderResponse> responses =  pageData.getContent().stream()
+                .map(orderMapper::toOrderResponse)
+                .toList();
+
+        return PageResponse.<OrderResponse>builder()
+                .currentPage(pageData.getNumber() + 1)
+                .items(responses)
+                .pageSize(pageData.getSize())
+                .totalElements(pageData.getTotalElements())
+                .totalPages(pageData.getTotalPages())
+                .build();
+    }
+
+    public OrderResponse adminGetById(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+
+        return orderMapper.toOrderResponse(order);
+    }
+
+    public void updateStatus(Long orderId, OrderStatus orderStatus) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hagnf"));
+
+        order.setStatus(orderStatus);
+        orderRepository.save(order);
     }
 }

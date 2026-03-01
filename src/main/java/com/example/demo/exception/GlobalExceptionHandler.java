@@ -1,10 +1,8 @@
 package com.example.demo.exception;
 
-import com.fasterxml.jackson.databind.ser.Serializers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,6 +10,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import com.example.project.core.exception.ErrorResponse;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,9 +22,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public com.example.project.core.exception.ErrorResponse handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
+    public ErrorResponse handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
         logger.warn("ResourceNotFound: Message= {}", ex.getMessage());
-        return new com.example.project.core.exception.ErrorResponse(
+        return new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 request.getDescription(false).replace("uri=", ""),
                 "Resource Not Found",
@@ -33,18 +32,27 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(UsernameNotFoundException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public com.example.project.core.exception.ErrorResponse handleUsernameNotFoundException(UsernameNotFoundException ex, WebRequest request) {
-
-        logger.warn("UsernameNotFound: Message= {}", ex.getMessage());
-        return new com.example.project.core.exception.ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse handleAccessDeniedException(AccessDeniedException ex, WebRequest request) {
+        return new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
                 request.getDescription(false).replace("uri=", ""),
-                "Bad Request",
+                "Access Denied",
                 ex.getMessage()
         );
     }
+
+//    public ErrorResponse handleUsernameNotFoundException(UsernameNotFoundException ex, WebRequest request) {
+//
+//        logger.warn("UsernameNotFound: Message= {}", ex.getMessage());
+//        return new ErrorResponse(
+//                HttpStatus.BAD_REQUEST.value(),
+//                request.getDescription(false).replace("uri=", ""),
+//                "Bad Request",
+//                ex.getMessage()
+//        );
+//    }
 
     // loi nghiep vu
     @ExceptionHandler(BaseException.class)

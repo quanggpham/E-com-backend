@@ -97,27 +97,28 @@ public class ProductService {
 //                .build();
 //    }
 
-    public PageResponse<ProductResponse> search(ProductSearchRequest request) {
-        if (request.getPage() < 1)
-            request.setPage(1);
-        if (request.getSize() > 51)
-            request.setSize(50);
+    public PageResponse<ProductResponse> search(ProductSearchRequest request, Pageable pageable) {
+        int validatedSize = Math.min(pageable.getPageSize(), 50);
 
-        Sort sort = request.getSortDirection().equalsIgnoreCase("asc") ?
-                    Sort.by(Sort.Direction.ASC, request.getSortBy()) :
-                Sort.by(Sort.Direction.DESC, request.getSortBy());
+        Pageable finalPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                validatedSize,
+                pageable.getSort()
+        );
 
-        Specification<Product> spec = Specification.allOf(ProductSpecification.hasCategory(request.getCategoryId()).and(ProductSpecification.hasName(request.getName()).and(ProductSpecification.hasPrice(request.getMinPrice(), request.getMaxPrice()))));
 
-        Pageable pageable = PageRequest.of(request.getPage() - 1, request.getSize(), sort);
+        Specification<Product> spec = Specification
+                .allOf(ProductSpecification.hasCategory(request.getCategoryId())
+                        .and(ProductSpecification.hasName(request.getName())
+                        .and(ProductSpecification.hasPrice(request.getMinPrice(), request.getMaxPrice()))));
 
-        Page<Product> pageData = productRepository.findAll(spec, pageable);
+        Page<Product> pageData = productRepository.findAll(spec, finalPageable);
         List<ProductResponse> response = pageData.getContent().stream()
                 .map(productMapper::toResponse).collect(Collectors.toList());
 
         return PageResponse.<ProductResponse>builder()
-                .pageSize(request.getSize())
-                .currentPage(request.getPage())
+                .pageSize(pageData.getSize())
+                .currentPage(pageData.getNumber() + 1)
                 .totalElements(pageData.getTotalElements())
                 .totalPages(pageData.getTotalPages())
                 .items(response)

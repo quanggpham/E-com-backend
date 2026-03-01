@@ -8,6 +8,6 @@ import lombok.Setter;
 @Setter
 public class UpdateCartRequest {
     private Long productId;
-    @Min(1)
+//    @Min(1)
     private int quantity;
 }

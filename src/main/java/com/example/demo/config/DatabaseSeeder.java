@@ -37,7 +37,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         Faker faker = new Faker(new Locale("vi"));
         Random random = new Random();
 
-        // 1. CHỈ CHẠY KHI DATABASE CÒN TRỐNG (Tránh việc mỗi lần restart server lại đẻ thêm data)
+        // 1. CHỈ CHẠY KHI DATABASE CÒN TRỐNG
         if (userRepository.count() == 0 && categoryRepository.count() == 0) {
             log.info("Bắt đầu tự động tạo dữ liệu mẫu (Seeding)...");
 
@@ -81,22 +81,16 @@ public class DatabaseSeeder implements CommandLineRunner {
                 }
             }
 
-            log.info("Đã tạo xong dữ liệu mẫu! Bạn có thể bắt đầu test API.");
+            log.info("Đã tạo xong dữ liệu mẫu!");
 
             log.info("Bắt đầu tạo Giỏ hàng và Đơn hàng giả...");
 
-            // Lấy toàn bộ User và Product vừa tạo lên để làm nguyên liệu
             List<User> allUsers = userRepository.findAll();
             List<Product> allProducts = productRepository.findAll();
 
-            // 4. DUYỆT QUA TỪNG USER ĐỂ TẠO DATA GIAO DỊCH
             for (User user : allUsers) {
                 // Bỏ qua Admin, Admin thì không đi mua hàng
                 if (user.getRole() == Role.ADMIN) continue;
-
-                // ==========================================
-                // 4.1 FAKE GIỎ HÀNG (Mỗi user có 1-3 món đang chờ thanh toán)
-                // ==========================================
 
                 Cart cart = cartRepository.findByUser(user)
                         .orElseGet(() -> {
@@ -108,11 +102,8 @@ public class DatabaseSeeder implements CommandLineRunner {
 
                 int cartItemCount = faker.number().numberBetween(1, 4);
                 for (int i = 0; i < cartItemCount; i++) {
-                    // Bốc đại 1 sản phẩm
-                    Product randomProduct = allProducts.get(random.nextInt(allProducts.size()));
 
-                    // Lưu ý: Tùy thiết kế của bạn, nếu bạn có Entity Cart riêng thì lấy Cart của user ra trước.
-                    // Ở đây mình ví dụ logic tạo CartItem:
+                    Product randomProduct = allProducts.get(random.nextInt(allProducts.size()));
 
                 CartItem cartItem = CartItem.builder()
                         .cart(user.getCart())
@@ -123,9 +114,6 @@ public class DatabaseSeeder implements CommandLineRunner {
 
                 }
 
-                // ==========================================
-                // 4.2 FAKE ĐƠN HÀNG LỊCH SỬ (Mỗi user đã từng đặt 1-5 đơn)
-                // ==========================================
                 int orderCount = faker.number().numberBetween(1, 6);
                 for (int i = 0; i < orderCount; i++) {
 
@@ -134,13 +122,13 @@ public class DatabaseSeeder implements CommandLineRunner {
 
                     Order order = Order.builder()
                             .user(user)
-                            .fullName(user.getFullName()) // Lấy luôn tên user
+                            .fullName(user.getFullName())
                             .phoneNumber(faker.phoneNumber().cellPhone())
-                            .shippingAddress(faker.address().fullAddress()) // Datafaker tự bịa địa chỉ rất xịn
-                            .note(faker.lorem().sentence(5)) // Bịa câu ghi chú
+                            .shippingAddress(faker.address().fullAddress())
+                            .note(faker.lorem().sentence(5))
                             .status(randomStatus)
                             .paymentMethod(PaymentMethod.COD)
-                            .totalMoney(BigDecimal.ZERO) // Sẽ cộng dồn ở dưới
+                            .totalMoney(BigDecimal.ZERO)
                             .build();
 
                     BigDecimal totalMoney = BigDecimal.ZERO;
@@ -170,7 +158,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     orderRepository.save(order);
                 }
             }
-            log.info("Khởi tạo dữ liệu thành công! Sẵn sàng cho FE lên thớt.");
+            log.info("Khởi tạo dữ liệu thành công!");
         }
     }
 }

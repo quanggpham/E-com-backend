@@ -25,7 +25,7 @@ public class ApplicationConfig {
     public UserDetailsService userDetailsService() {
         return username -> {
             User user = userRepository.findByEmail(username)
-                    .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy user với email: " + username));
+                    .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy email"));
 
             return UserPrincipal.create(user);
         };
