@@ -4,7 +4,6 @@ import com.example.demo.dto.request.UpdateOrderStatusRequest;
 import com.example.demo.dto.response.ApiResponse;
 import com.example.demo.dto.response.OrderResponse;
 import com.example.demo.dto.response.PageResponse;
-import com.example.demo.entity.Order;
 import com.example.demo.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +46,7 @@ public class AdminOrderController {
         );
     }
 
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> updateStatus(
@@ -55,7 +55,7 @@ public class AdminOrderController {
         orderService.updateStatus(id, request.getOrderStatus());
         return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.<Void>builder()
-                        .message("Xem đơn hàng thành công")
+                        .message("Cập nhật trạng thái đơn hàng thành công")
                         .status(HttpStatus.OK.value())
                         .build()
         );

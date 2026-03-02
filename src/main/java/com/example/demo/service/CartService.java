@@ -81,7 +81,7 @@ public class CartService {
                             .itemId(item.getId())
                             .productId(item.getProduct().getId())
                             .productName(item.getProduct().getName())
-                            .thumbnailUrl(item.getProduct().getThumbnailUrl())
+                            .imageUrl(item.getProduct().getImageUrl())
                             .quantity(item.getQuantity())
                             .price(item.getProduct().getPrice())
                             .subTotal(subTotal)

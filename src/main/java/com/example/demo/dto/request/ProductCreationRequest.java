@@ -21,7 +21,7 @@ public class ProductCreationRequest {
     private BigDecimal price;
 
     private Long stockQuantity;
-    private String thumbnailUrl;
+    private String imageUrl;
 
     @NotNull(message = "CategoryId không được để trống")
     private Long categoryId;

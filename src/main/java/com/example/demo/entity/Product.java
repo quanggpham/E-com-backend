@@ -1,15 +1,13 @@
 package com.example.demo.entity;
 
 import jakarta.persistence.*;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.extern.apachecommons.CommonsLog;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,6 +22,7 @@ import java.util.List;
 @Table(name = "products")
 @Where(clause = "deleted_at IS NULL")
 @SQLDelete(sql = "UPDATE products SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,8 +53,8 @@ public class Product {
     @Column(name = "stock_quantity")
     private Long stockQuantity;
 
-    @Column(name = "thumbnail_url", length = 300)
-    private String thumbnailUrl;
+    @Column(name = "image_url", length = 300)
+    private String imageUrl;
 
     @Column(name = "is_active")
     private Boolean isActive;

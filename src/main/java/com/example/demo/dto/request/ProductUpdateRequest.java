@@ -21,7 +21,7 @@ public class ProductUpdateRequest {
     private BigDecimal price;
 
     private Long stockQuantity;
-    private String thumbnailUrl;
+    private String imageUrl;
 
     private Boolean isActive;
 

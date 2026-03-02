@@ -167,6 +167,7 @@ public class OrderService {
         return orderMapper.toOrderResponse(order);
     }
 
+    @Transactional
     public void updateStatus(Long orderId, OrderStatus orderStatus) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hagnf"));

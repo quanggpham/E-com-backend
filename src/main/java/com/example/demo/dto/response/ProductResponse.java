@@ -14,7 +14,7 @@ public class ProductResponse {
     private String description;
     private BigDecimal price;
     private Long stockQuantity;
-    private String thumbnailUrl;
+    private String imageUrl;
     private Boolean isActive;
     private CategoryResponse category;
     private LocalDateTime createdAt;

@@ -14,17 +14,14 @@ import com.example.demo.repository.ProductRepository;
 import com.example.demo.repository.specification.ProductSpecification;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.query.SortDirection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -56,7 +53,7 @@ public class ProductService {
     @Transactional
     public ProductResponse delete(Long id) {
         Product product = productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
-        productRepository.deleteById(id);
+        productRepository.delete(product);
         return productMapper.toResponse(product);
     }
 
@@ -106,7 +103,6 @@ public class ProductService {
                 pageable.getSort()
         );
 
-
         Specification<Product> spec = Specification
                 .allOf(ProductSpecification.hasCategory(request.getCategoryId())
                         .and(ProductSpecification.hasName(request.getName())
@@ -114,7 +110,7 @@ public class ProductService {
 
         Page<Product> pageData = productRepository.findAll(spec, finalPageable);
         List<ProductResponse> response = pageData.getContent().stream()
-                .map(productMapper::toResponse).collect(Collectors.toList());
+                .map(productMapper::toResponse).toList();
 
         return PageResponse.<ProductResponse>builder()
                 .pageSize(pageData.getSize())
