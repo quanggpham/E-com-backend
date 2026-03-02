@@ -10,6 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -26,10 +27,10 @@ public class Coupon {
     private Long id;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "coupon")
-    private List<CouponUsage> couponUsage;
+    @Builder.Default
+    private List<CouponUsage> couponUsages = new ArrayList<>();
 
     @Column(name = "code", nullable = false, unique = true, length = 50)
-    @NotBlank(message = "Code ko dc de trong")
     private String code;
 
     @Enumerated(EnumType.STRING)
@@ -37,7 +38,6 @@ public class Coupon {
     private DiscountType discountType;
 
     @Column(name = "discount_value", nullable = false)
-    @Min(value = 0)
     private BigDecimal discountValue;
 
     @Column(name = "max_discount_amount")
@@ -46,11 +46,17 @@ public class Coupon {
     @Column(name = "min_order_value")
     private BigDecimal minOrderValue;
 
+    @Column(name = "usage_limit", nullable = false)
+    private Integer usageLimit;
+
+    @Column(name = "used_count")
+    @Builder.Default
+    private Integer usedCount = 0;
+
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
     @Column(name = "expiration_date", nullable = false)
-    @Future(message = "Ngay het han phai o tuong lai")
     private LocalDate expirationDate;
 
     @Column(name = "is_active")
