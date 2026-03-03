@@ -33,6 +33,7 @@ public class OrderService {
     private final OrderMapper orderMapper;
     private final CartItemRepository cartItemRepository;
     private final CouponService couponService;
+    private final EmailService emailService;
 
     @Transactional
     public OrderResponse createOrder(Long userId, CheckoutRequest request) {
@@ -94,6 +95,8 @@ public class OrderService {
                 .toList();
 
         cartItemRepository.deleteByUserIdAndProductIdIn(user.getId(), productIds);
+
+        emailService.sendOrderConfirmationEmail(savedOrder);
 
         return orderMapper.toOrderResponse(savedOrder);
     }
