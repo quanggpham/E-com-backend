@@ -32,4 +32,6 @@ public class CheckoutRequest {
     @NotEmpty(message = "Giỏ hàng không được để trống")
     @Valid
     private List<CartItemRequest> items;
+
+    private String code;
 }

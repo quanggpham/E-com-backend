@@ -19,6 +19,8 @@ public class OrderResponse {
     private String note;
     private OrderStatus status;
     private PaymentMethod paymentMethod;
+    private BigDecimal subTotal;
+    private BigDecimal discountAmount;
     private BigDecimal totalMoney;
 
 

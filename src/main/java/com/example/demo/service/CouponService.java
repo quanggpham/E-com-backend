@@ -1,6 +1,9 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Coupon;
+import com.example.demo.entity.CouponUsage;
+import com.example.demo.entity.Order;
+import com.example.demo.entity.User;
 import com.example.demo.enums.DiscountType;
 import com.example.demo.exception.BusinessException;
 import com.example.demo.exception.ResourceNotFoundException;
@@ -8,6 +11,7 @@ import com.example.demo.repository.CouponRepository;
 import com.example.demo.repository.CouponUsageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -47,7 +51,32 @@ public class CouponService {
         BigDecimal discountAmount = BigDecimal.ZERO;
 
         if (coupon.getDiscountType().equals(DiscountType.FIXED_AMOUNT)) {
-
+            discountAmount = coupon.getDiscountValue();
+        } else if (coupon.getDiscountType().equals(DiscountType.PERCENTAGE)){
+            BigDecimal percent = coupon.getDiscountValue().divide(new BigDecimal(100));
+            discountAmount = percent.multiply(amount);
         }
+
+        if (discountAmount.compareTo(amount) > 0) {
+            discountAmount = amount;
+        }
+
+        return discountAmount;
+    }
+
+    @Transactional
+    public void markCouponAsUsed(String code, User user, Order order) {
+        Coupon coupon = couponRepository.findByCode(code)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mã giảm giá"));
+
+        coupon.setUsedCount(coupon.getUsedCount() + 1);
+        couponRepository.save(coupon);
+
+        CouponUsage couponUsage = CouponUsage.builder()
+                .coupon(coupon)
+                .user(user)
+                .order(order)
+                .build();
+        couponUsageRepository.save(couponUsage);
     }
 }

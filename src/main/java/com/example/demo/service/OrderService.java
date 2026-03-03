@@ -32,6 +32,7 @@ public class OrderService {
     private final UserRepository userRepository;
     private final OrderMapper orderMapper;
     private final CartItemRepository cartItemRepository;
+    private final CouponService couponService;
 
     @Transactional
     public OrderResponse createOrder(Long userId, CheckoutRequest request) {
@@ -44,12 +45,14 @@ public class OrderService {
                 .note(request.getNote())
                 .paymentMethod(request.getPaymentMethod())
                 .status(OrderStatus.PENDING)
+                .subTotal(BigDecimal.ZERO)
+                .discountAmount(BigDecimal.ZERO)
                 .shippingAddress(request.getShippingAddress())
                 .totalMoney(BigDecimal.ZERO)
                 .phoneNumber(request.getPhoneNumber())
                 .build();
 
-        BigDecimal totalMoney = BigDecimal.ZERO;
+        BigDecimal subTotal = BigDecimal.ZERO;
 
         for (CartItemRequest item : request.getItems())
         {
@@ -60,7 +63,7 @@ public class OrderService {
             }
 
             product.setStockQuantity(product.getStockQuantity() - item.getQuantity());
-            totalMoney = totalMoney.add(product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+            subTotal = subTotal.add(product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
 
 
             OrderDetail orderDetail = OrderDetail.builder()
@@ -72,7 +75,17 @@ public class OrderService {
             order.addOrderDetail(orderDetail);
         }
 
+        order.setSubTotal(subTotal);
+
+        String code = request.getCode();
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        if (code != null && !code.trim().isEmpty()) {
+            discountAmount = couponService.calculateDiscount(request.getCode(), subTotal, userId);
+        }
+
+        BigDecimal totalMoney = subTotal.subtract(discountAmount);
         order.setTotalMoney(totalMoney);
+        order.setDiscountAmount(discountAmount);
 
         Order savedOrder = orderRepository.save(order);
 

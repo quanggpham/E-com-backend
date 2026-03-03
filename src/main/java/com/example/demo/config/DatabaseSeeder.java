@@ -1,6 +1,7 @@
 package com.example.demo.config;
 
 import com.example.demo.entity.*;
+import com.example.demo.enums.DiscountType;
 import com.example.demo.enums.OrderStatus;
 import com.example.demo.enums.PaymentMethod;
 import com.example.demo.enums.Role;
@@ -14,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
@@ -30,6 +33,8 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final OrderRepository orderRepository;
     private final CartItemRepository cartItemRepository;
     private final CartRepository cartRepository;
+    private final CouponRepository couponRepository;
+    private final CouponUsageRepository couponUsageRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -80,6 +85,36 @@ public class DatabaseSeeder implements CommandLineRunner {
                     productRepository.save(product);
                 }
             }
+
+            // 4. BỔ SUNG: TẠO MÃ GIẢM GIÁ (COUPON)
+            List<Coupon> coupons = new ArrayList<>();
+            // Mã giảm giá thẳng 50k cho đơn từ 150k
+            coupons.add(Coupon.builder()
+                    .code("GIAM50K")
+                    .discountType(DiscountType.FIXED_AMOUNT)
+                    .discountValue(new BigDecimal("50000"))
+                    .minOrderValue(new BigDecimal("150000"))
+                    .usageLimit(100)
+                    .usedCount(0)
+                    .startDate(LocalDate.now().minusDays(5))
+                    .expirationDate(LocalDate.now().plusDays(30))
+                    .isActive(true)
+                    .build());
+
+            // Mã giảm 20%, tối đa 30k cho đơn từ 100k
+            coupons.add(Coupon.builder()
+                    .code("GIAM20PT")
+                    .discountType(DiscountType.PERCENTAGE)
+                    .discountValue(new BigDecimal("20")) // 20%
+                    .maxDiscountAmount(new BigDecimal("30000"))
+                    .minOrderValue(new BigDecimal("100000"))
+                    .usageLimit(50)
+                    .usedCount(0)
+                    .startDate(LocalDate.now().minusDays(10))
+                    .expirationDate(LocalDate.now().plusDays(15))
+                    .isActive(true)
+                    .build());
+            couponRepository.saveAll(coupons);
 
             log.info("Đã tạo xong dữ liệu mẫu!");
 

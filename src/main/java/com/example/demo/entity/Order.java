@@ -67,6 +67,13 @@ public class Order {
     @Column(name = "total_money", nullable = false)
     private BigDecimal totalMoney;
 
+    @Column(name = "sub_total", nullable = false)
+    private BigDecimal subTotal;
+
+    @Column(name = "discount_amount")
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
     @CreationTimestamp
     @Column(name = "order_date", updatable = false)
     private LocalDateTime orderDate;
