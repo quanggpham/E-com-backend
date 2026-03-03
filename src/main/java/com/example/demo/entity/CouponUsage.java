@@ -32,8 +32,8 @@ public class CouponUsage {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-//    @Column(name = "discount_amount", nullable = false)
-//    private BigDecimal discountAmount;
+    @Column(name = "discount_amount", nullable = false)
+    private BigDecimal discountAmount;
 
     @CreationTimestamp
     @Column(name = "used_at", updatable = false)
