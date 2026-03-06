@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -165,7 +166,6 @@ public class DatabaseSeeder implements CommandLineRunner {
                             .paymentMethod(PaymentMethod.COD)
                             .totalMoney(BigDecimal.ZERO)
                             .build();
-
                     BigDecimal totalMoney = BigDecimal.ZERO;
 
                     // Mỗi đơn hàng khách mua 1-4 món khác nhau
@@ -190,6 +190,14 @@ public class DatabaseSeeder implements CommandLineRunner {
 
                     // Chốt tổng tiền và lưu
                     order.setTotalMoney(totalMoney);
+                    order.setSubTotal(totalMoney);
+
+                    order.setDiscountAmount(BigDecimal.ZERO);
+                    // Ép đơn hàng có ngày tạo ngẫu nhiên trong 30 ngày qua để test thống kê
+                    order.setCreatedAt(LocalDateTime.now().minusDays(random.nextInt(30)));
+
+                    OrderStatus status = (random.nextInt(10) < 7) ? OrderStatus.COMPLETED : OrderStatus.CANCELLED;
+                    order.setStatus(status);
                     orderRepository.save(order);
                 }
             }

@@ -32,7 +32,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
                         .requestMatchers("/api/v1/orders/**").authenticated()
-
+                        .requestMatchers("/api/v1/payments/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll() // api dang ki dang nhap
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll() // api xem danh muc
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()   // api xem san pham

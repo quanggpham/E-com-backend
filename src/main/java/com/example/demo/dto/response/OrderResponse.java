@@ -25,7 +25,7 @@ public class OrderResponse {
 
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime orderDate;
+    private LocalDateTime createdAt;
 
 
     private List<OrderDetailResponse> orderDetails;

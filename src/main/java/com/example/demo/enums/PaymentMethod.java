@@ -2,7 +2,7 @@ package com.example.demo.enums;
 
 public enum PaymentMethod {
     COD,
-    BANKING,
+    BANK_TRANSFER,
     CREDIT,
     VNPAY,
     MOMO,

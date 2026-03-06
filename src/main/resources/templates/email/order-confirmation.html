@@ -94,7 +94,7 @@
                     </td>
                     <td width="50%" valign="top">
                         <div class="meta-label">Thời gian đặt</div>
-                        <div class="meta-value" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}">03/03/2026 12:15</div>
+                        <div class="meta-value" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">03/03/2026 12:15</div>
                     </td>
                 </tr>
             </table>

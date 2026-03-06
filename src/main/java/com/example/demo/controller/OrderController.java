@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class OrderController {
 
-    private final ServerProperties serverProperties;
     private final OrderService orderService;
 
     @PostMapping

@@ -74,9 +74,9 @@ public class Order {
     @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
-    @CreationTimestamp
-    @Column(name = "order_date", updatable = false)
-    private LocalDateTime orderDate;
+//    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
 //    private String couponCode;
 
