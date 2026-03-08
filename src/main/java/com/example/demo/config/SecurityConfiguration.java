@@ -41,6 +41,8 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**").hasRole("ADMIN")
 
+                        .requestMatchers("/api/v1/ai/**").permitAll()
+
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
