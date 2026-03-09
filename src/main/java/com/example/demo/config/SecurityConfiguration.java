@@ -29,21 +29,25 @@ public class SecurityConfiguration {
                 .csrf(AbstractHttpConfigurer::disable)
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-
-                        .requestMatchers("/api/v1/orders/**").authenticated()
+                        .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/payments/**").permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll() // api dang ki dang nhap
-                        .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll() // api xem danh muc
-                        .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()   // api xem san pham
+                        .requestMatchers("/api/v1/ai/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
+                        .requestMatchers("/error").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/api/v1/coupons/calculate").authenticated()
+                        .requestMatchers("/api/v1/coupons/**").hasRole("ADMIN")
+
+                        .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
+
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**").hasRole("ADMIN")
 
-                        .requestMatchers("/api/v1/ai/**").permitAll()
+                        .requestMatchers("/api/v1/orders/**").authenticated() // Khách đăng nhập mới được đặt hàng
 
-                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
 

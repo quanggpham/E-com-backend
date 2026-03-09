@@ -7,9 +7,12 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,6 +23,8 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Table(name = "coupons")
+@SQLDelete(sql = "UPDATE coupons SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 public class Coupon {
 
     @Id
@@ -59,10 +64,13 @@ public class Coupon {
     @Column(name = "expiration_date", nullable = false)
     private LocalDate expirationDate;
 
-    @Column(name = "is_active")
-    private boolean isActive = true; // Admin có thể tắt mã khẩn cấp
+    @Column(name = "active")
+    private boolean active = true;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDate createdAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

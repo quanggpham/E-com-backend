@@ -90,6 +90,10 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
+        if (code != null && !code.trim().isEmpty() && discountAmount.compareTo(BigDecimal.ZERO) > 0) {
+            couponService.markCouponAsUsed(code, user, savedOrder, discountAmount);
+        }
+        
         List<Long> productIds = request.getItems().stream()
                 .map(CartItemRequest::getProductId)
                 .toList();

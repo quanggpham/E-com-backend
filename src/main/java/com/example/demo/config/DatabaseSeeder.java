@@ -99,7 +99,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .usedCount(0)
                     .startDate(LocalDate.now().minusDays(5))
                     .expirationDate(LocalDate.now().plusDays(30))
-                    .isActive(true)
+                    .active(true)
                     .build());
 
             // Mã giảm 20%, tối đa 30k cho đơn từ 100k
@@ -113,7 +113,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .usedCount(0)
                     .startDate(LocalDate.now().minusDays(10))
                     .expirationDate(LocalDate.now().plusDays(15))
-                    .isActive(true)
+                    .active(true)
                     .build());
             couponRepository.saveAll(coupons);
 
