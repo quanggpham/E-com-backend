@@ -7,6 +7,8 @@ import com.example.demo.dto.response.ApiResponse;
 import com.example.demo.dto.response.PageResponse;
 import com.example.demo.dto.response.ProductResponse;
 import com.example.demo.entity.Product;
+import com.example.demo.security.UserPrincipal;
+import com.example.demo.service.ProductLikeService;
 import com.example.demo.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -14,15 +16,46 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
 public class ProductController {
     private final ProductService productService;
+    private final ProductLikeService productLikeService;
+
+    @PostMapping("/{id}/like")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> toggleLike(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal currentUser
+    ) {
+        boolean liked = productLikeService.toggleLike(id, currentUser.getId());
+        ApiResponse<Map<String, Object>> response = ApiResponse.<Map<String, Object>>builder()
+                .status(HttpStatus.OK.value())
+                .message(liked ? "Đã thích sản phẩm" : "Đã bỏ thích sản phẩm")
+                .data(Map.of("liked", liked))
+                .build();
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/liked")
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getLikedProducts(
+            @AuthenticationPrincipal UserPrincipal currentUser
+    ) {
+        List<ProductResponse> data = productLikeService.getLikedProducts(currentUser.getId());
+        ApiResponse<List<ProductResponse>> response = ApiResponse.<List<ProductResponse>>builder()
+                .status(HttpStatus.OK.value())
+                .message("Lấy danh sách sản phẩm yêu thích thành công")
+                .data(data)
+                .build();
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<ProductResponse>> create(@RequestBody ProductCreationRequest request) {
@@ -56,13 +89,16 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProductResponse>> findById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ProductResponse>> findById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal(expression = "id") Long userId
+    ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.<ProductResponse>builder()
                         .status(HttpStatus.OK.value())
                         .message("Lấy thông tin sản phẩm thành công")
-                        .data(productService.findById(id))
+                        .data(productService.findById(id, userId))
                         .build());
     }
 
@@ -86,13 +122,14 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> search(
             ProductSearchRequest request,
-            Pageable pageable
+            Pageable pageable,
+            @AuthenticationPrincipal(expression = "id") Long userId
     ) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.<PageResponse<ProductResponse>>builder()
                         .status(HttpStatus.OK.value())
                         .message("Tìm kiếm thành công")
-                        .data(productService.search(request, pageable))
+                        .data(productService.search(request, pageable, userId))
                         .build());
     }
 }

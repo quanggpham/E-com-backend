@@ -1,0 +1,190 @@
+{
+  "baseUrl": "http://localhost:8080/api/v1",
+  "authHeader": "Authorization: Bearer {{token}}",
+  "examples": {
+    "auth": {
+      "register": {
+        "method": "POST",
+        "url": "/auth/register",
+        "body": {
+          "name": "Nguyễn Văn A",
+          "email": "user@example.com",
+          "password": "123456"
+        }
+      },
+      "login": {
+        "method": "POST",
+        "url": "/auth/login",
+        "body": {
+          "email": "user@example.com",
+          "password": "123456"
+        }
+      }
+    },
+    "profile": {
+      "getProfile": {
+        "method": "GET",
+        "url": "/profile",
+        "auth": true
+      },
+      "updateProfile": {
+        "method": "PUT",
+        "url": "/profile",
+        "auth": true,
+        "body": {
+          "username": "nguyenvana",
+          "fullName": "Nguyễn Văn A",
+          "phone": "0901234567"
+        }
+      }
+    },
+    "addresses": {
+      "list": {
+        "method": "GET",
+        "url": "/addresses",
+        "auth": true
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/addresses/1",
+        "auth": true
+      },
+      "create": {
+        "method": "POST",
+        "url": "/addresses",
+        "auth": true,
+        "body": {
+          "recipientName": "Nguyễn Văn A",
+          "phone": "0901234567",
+          "addressLine": "123 Đường ABC, Phường XYZ",
+          "district": "Quận 1",
+          "city": "TP. Hồ Chí Minh",
+          "isDefault": false
+        }
+      },
+      "update": {
+        "method": "PUT",
+        "url": "/addresses/1",
+        "auth": true,
+        "body": {
+          "recipientName": "Trần Văn B",
+          "phone": "0912345678",
+          "addressLine": "456 Đường XYZ",
+          "district": "Quận 7",
+          "city": "TP. Hồ Chí Minh",
+          "isDefault": true
+        }
+      },
+      "setDefault": {
+        "method": "PUT",
+        "url": "/addresses/1/default",
+        "auth": true
+      },
+      "delete": {
+        "method": "DELETE",
+        "url": "/addresses/1",
+        "auth": true
+      }
+    },
+    "carts": {
+      "add": {
+        "method": "POST",
+        "url": "/carts/add",
+        "auth": true,
+        "body": {
+          "productId": 1,
+          "quantity": 2
+        }
+      },
+      "getCart": {
+        "method": "GET",
+        "url": "/carts",
+        "auth": true
+      },
+      "updateQuantity": {
+        "method": "PUT",
+        "url": "/carts/item",
+        "auth": true,
+        "body": {
+          "productId": 1,
+          "quantity": 3
+        }
+      },
+      "deleteItem": {
+        "method": "DELETE",
+        "url": "/carts/item/1",
+        "auth": true
+      },
+      "clear": {
+        "method": "DELETE",
+        "url": "/carts/clear",
+        "auth": true
+      }
+    },
+    "orders": {
+      "checkout": {
+        "method": "POST",
+        "url": "/orders",
+        "auth": true,
+        "body": {
+          "fullName": "Nguyễn Văn A",
+          "phoneNumber": "0901234567",
+          "shippingAddress": "123 Đường ABC, Quận 1, TP.HCM",
+          "note": "Giao giờ hành chính",
+          "paymentMethod": "COD",
+          "items": [
+            { "productId": 1, "quantity": 2 },
+            { "productId": 2, "quantity": 1 }
+          ],
+          "code": "GIAM50K"
+        }
+      },
+      "list": {
+        "method": "GET",
+        "url": "/orders?page=0&size=10&sort=createdAt,desc",
+        "auth": true
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/orders/1",
+        "auth": true
+      },
+      "cancel": {
+        "method": "PUT",
+        "url": "/orders/cancel/1",
+        "auth": true
+      }
+    },
+    "coupons": {
+      "calculate": {
+        "method": "GET",
+        "url": "/coupons/calculate?code=GIAM50K&amount=200000",
+        "auth": true
+      }
+    },
+    "categories": {
+      "list": {
+        "method": "GET",
+        "url": "/categories",
+        "auth": false
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/categories/1",
+        "auth": false
+      }
+    },
+    "products": {
+      "search": {
+        "method": "GET",
+        "url": "/products?page=0&size=10&name=phở&categoryId=1&minPrice=10000&maxPrice=100000",
+        "auth": false
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/products/1",
+        "auth": false
+      }
+    }
+  }
+}

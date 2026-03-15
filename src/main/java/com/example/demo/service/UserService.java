@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.request.ProfileUpdateRequest;
 import com.example.demo.dto.request.UserCreationRequest;
 import com.example.demo.dto.request.UserUpdateRequest;
 import com.example.demo.dto.response.PageResponse;
@@ -67,6 +68,24 @@ public class UserService {
                 .totalElements(pageData.getTotalElements())
                 .currentPage(pageData.getNumber() + 1)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+        return userMapper.toUserResponse(user);
+    }
+
+    @Transactional
+    public UserResponse updateProfile(Long userId, ProfileUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+        if (request.getUsername() != null && userRepository.existsByUsernameAndIdNot(request.getUsername(), userId)) {
+            throw new BusinessException("Username đã tồn tại");
+        }
+        userMapper.updateUserFromProfileRequest(request, user);
+        return userMapper.toUserResponse(userRepository.save(user));
     }
 
     @Transactional

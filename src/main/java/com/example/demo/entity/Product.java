@@ -38,6 +38,9 @@ public class Product {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "product")
     private List<Review> review;
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "product", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+    private List<ProductLike> productLikes;
+
     @Column(nullable = false)
     @NotBlank(message = "Tên sản phẩm không được để trống")
     private String name;

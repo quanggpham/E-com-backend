@@ -52,6 +52,9 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Cart cart;
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductLike> productLikes;
+
     @Column(name = "email", unique = true, nullable = false, length = 100)
     @Email(message = "email khong dugn dinh dang")
     @NotBlank(message = "email khong duoc de trong")

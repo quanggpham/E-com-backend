@@ -7,10 +7,13 @@ import com.example.demo.dto.response.PageResponse;
 import com.example.demo.dto.response.ProductResponse;
 import com.example.demo.entity.Category;
 import com.example.demo.entity.Product;
+import com.example.demo.entity.User;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.mapper.ProductMapper;
 import com.example.demo.repository.CategoryRepository;
+import com.example.demo.repository.ProductLikeRepository;
 import com.example.demo.repository.ProductRepository;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.specification.ProductSpecification;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +32,8 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final CategoryRepository categoryRepository;
+    private final ProductLikeRepository productLikeRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public ProductResponse create(@Valid ProductCreationRequest request) {
@@ -57,9 +62,11 @@ public class ProductService {
         return productMapper.toResponse(product);
     }
 
-    public ProductResponse findById(Long id) {
+    public ProductResponse findById(Long id, Long userId) {
         Product product = productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
-        return productMapper.toResponse(product);
+        ProductResponse response = productMapper.toResponse(product);
+        enrichWithLikeInfo(response, product, userId);
+        return response;
     }
 
 //    public PageResponse<ProductResponse> findAll(int page, int size, String sortBy, String sortDirection, String name) {
@@ -94,7 +101,7 @@ public class ProductService {
 //                .build();
 //    }
 
-    public PageResponse<ProductResponse> search(ProductSearchRequest request, Pageable pageable) {
+    public PageResponse<ProductResponse> search(ProductSearchRequest request, Pageable pageable, Long userId) {
         int validatedSize = Math.min(pageable.getPageSize(), 50);
 
         Pageable finalPageable = PageRequest.of(
@@ -110,7 +117,11 @@ public class ProductService {
 
         Page<Product> pageData = productRepository.findAll(spec, finalPageable);
         List<ProductResponse> response = pageData.getContent().stream()
-                .map(productMapper::toResponse).toList();
+                .map(p -> {
+                    ProductResponse pr = productMapper.toResponse(p);
+                    enrichWithLikeInfo(pr, p, userId);
+                    return pr;
+                }).toList();
 
         return PageResponse.<ProductResponse>builder()
                 .pageSize(pageData.getSize())
@@ -119,5 +130,15 @@ public class ProductService {
                 .totalPages(pageData.getTotalPages())
                 .items(response)
                 .build();
+    }
+
+    private void enrichWithLikeInfo(ProductResponse response, Product product, Long userId) {
+        response.setLikeCount(productLikeRepository.countByProduct(product));
+        if (userId != null) {
+            User user = userRepository.findById(userId).orElse(null);
+            response.setLiked(user != null && productLikeRepository.existsByUserAndProduct(user, product));
+        } else {
+            response.setLiked(false);
+        }
     }
 }

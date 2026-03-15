@@ -74,7 +74,7 @@ public class OrderController {
     ) {
         return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.<PageResponse<OrderResponse>>builder()
-                        .message("Cập nhật trạng thái thành công")
+                        .message("Xem danh sách đơn hàng thành công")
                         .status(HttpStatus.OK.value())
                         .data(orderService.getAllByUserId(userPrincipal.getId(), pageable))
                         .build()

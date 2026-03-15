@@ -18,4 +18,6 @@ public class ProductResponse {
     private Boolean isActive;
     private CategoryResponse category;
     private LocalDateTime createdAt;
+    private Long likeCount;
+    private Boolean liked;
 }
