@@ -122,14 +122,14 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> search(
             ProductSearchRequest request,
-            Pageable pageable,
-            @AuthenticationPrincipal(expression = "id") Long userId
+            Pageable pageable
+//            @AuthenticationPrincipal(expression = "id") Long userId
     ) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.<PageResponse<ProductResponse>>builder()
                         .status(HttpStatus.OK.value())
                         .message("Tìm kiếm thành công")
-                        .data(productService.search(request, pageable, userId))
+                        .data(productService.search(request, pageable))
                         .build());
     }
 }

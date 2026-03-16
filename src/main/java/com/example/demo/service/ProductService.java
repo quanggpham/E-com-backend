@@ -101,7 +101,7 @@ public class ProductService {
 //                .build();
 //    }
 
-    public PageResponse<ProductResponse> search(ProductSearchRequest request, Pageable pageable, Long userId) {
+    public PageResponse<ProductResponse> search(ProductSearchRequest request, Pageable pageable) {
         int validatedSize = Math.min(pageable.getPageSize(), 50);
 
         Pageable finalPageable = PageRequest.of(
@@ -119,7 +119,7 @@ public class ProductService {
         List<ProductResponse> response = pageData.getContent().stream()
                 .map(p -> {
                     ProductResponse pr = productMapper.toResponse(p);
-                    enrichWithLikeInfo(pr, p, userId);
+//                    enrichWithLikeInfo(pr, p, userId);
                     return pr;
                 }).toList();
 
