@@ -11,6 +11,8 @@ import java.util.Optional;
 public interface ProductLikeRepository extends JpaRepository<ProductLike, Long> {
     Optional<ProductLike> findByUserAndProduct(User user, Product product);
     boolean existsByUserAndProduct(User user, Product product);
+    boolean existsByUserIdAndProductId(Long userId, Long productId);
     long countByProduct(Product product);
+    long countByProductId(Long productId);
     List<ProductLike> findByUserOrderByCreatedAtDesc(User user);
 }

@@ -105,13 +105,15 @@ public class OrderService {
         return orderMapper.toOrderResponse(savedOrder);
     }
 
-    public PageResponse<OrderResponse> getAll(Pageable pageable) {
+    public PageResponse<OrderResponse> getAll(Pageable pageable, OrderStatus status) {
         int size = pageable.getPageSize();
         int validPageSize= Math.min(size, 50);
 
-         Pageable newPageable = PageRequest.of(pageable.getPageNumber(), validPageSize, pageable.getSort());
+        Pageable newPageable = PageRequest.of(pageable.getPageNumber(), validPageSize, pageable.getSort());
 
-        Page<Order> pageData= orderRepository.findAll(newPageable);
+        Page<Order> pageData = status == null
+                ? orderRepository.findAll(newPageable)
+                : orderRepository.findAllByStatus(status, newPageable);
         List<OrderResponse> response= pageData.getContent().stream()
                 .map(orderMapper::toOrderResponse)
                 .toList();
@@ -160,12 +162,14 @@ public class OrderService {
         orderRepository.save(order);
     }
 
-    public PageResponse<OrderResponse> getAllByUserId(Long userId, Pageable pageable) {
+    public PageResponse<OrderResponse> getAllByUserId(Long userId, Pageable pageable, OrderStatus status) {
         int size = pageable.getPageSize();
         int validPageSize= Math.min(size, 50);
 
         Pageable finalPageable = PageRequest.of(pageable.getPageNumber(), validPageSize, pageable.getSort());
-        Page<Order> pageData= orderRepository.findAllByUserId(userId, finalPageable);
+        Page<Order> pageData = status == null
+                ? orderRepository.findAllByUserId(userId, finalPageable)
+                : orderRepository.findAllByUserIdAndStatus(userId, status, finalPageable);
 
         List<OrderResponse> responses =  pageData.getContent().stream()
                 .map(orderMapper::toOrderResponse)

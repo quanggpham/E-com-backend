@@ -1,11 +1,9 @@
-
 package com.example.demo.service;
 
 import com.example.demo.entity.Order;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -39,7 +37,30 @@ public class EmailService {
             mailSender.send(mimeMessage);
             log.info("Order confirmation email sent");
         } catch (Exception e) {
-            log.error("Lỗi khi gửi email: {}", e.getMessage());
+            log.error("Loi khi gui email order confirmation: {}", e.getMessage());
+        }
+    }
+
+    @Async
+    public void sendReviewRejectedEmail(String email, String productName, String rejectionReason) {
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
+
+            helper.setFrom("phamquangdung188@gmail.com");
+            helper.setTo(email);
+            helper.setSubject("Review moderation update");
+            helper.setText("""
+                    Review cua ban cho san pham "%s" da bi tu choi.
+                    Ly do: %s
+                    """.formatted(
+                    productName,
+                    rejectionReason == null ? "Khong duoc cung cap" : rejectionReason
+            ));
+            mailSender.send(mimeMessage);
+            log.info("Review rejection email sent");
+        } catch (Exception e) {
+            log.error("Loi khi gui email tu choi review: {}", e.getMessage());
         }
     }
 }

@@ -41,6 +41,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/ai/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
+                        .requestMatchers("/api/v1/users/me/**").authenticated()
                         .requestMatchers("/error").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/v1/coupons/calculate").authenticated()
@@ -49,6 +50,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
 
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/seller/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**").hasRole("ADMIN")

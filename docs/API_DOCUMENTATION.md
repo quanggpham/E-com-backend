@@ -656,3 +656,325 @@ Content-Type: application/json
 | 403 | Forbidden - Không có quyền |
 | 404 | Not Found - Không tìm thấy tài nguyên |
 | 500 | Server Error - Lỗi hệ thống |
+---
+
+## 13. Review & Rating APIs
+
+### 13.1 Lấy danh sách review của sản phẩm
+**GET** `/products/{id}/reviews?rating=5&page=0&size=10&sort=createdAt,desc`
+
+**Query params:**
+- `rating` - lọc theo số sao `1..5` (optional)
+- `page` (default: 0)
+- `size` (default: 10)
+- `sort` (vd: `createdAt,desc`)
+
+| Auth |
+|------|
+| Không |
+
+**Mô tả:**
+- Chỉ trả review đã duyệt (`APPROVED`)
+- Kèm phần `stats` từ bảng cache `product_stats`
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Lay danh sach review thanh cong",
+  "data": {
+    "stats": {
+      "productId": 1,
+      "avgRating": 4.50,
+      "totalReviews": 12,
+      "ratingDistribution": {
+        "1": 0,
+        "2": 1,
+        "3": 1,
+        "4": 2,
+        "5": 8
+      }
+    },
+    "reviews": {
+      "currentPage": 1,
+      "totalPages": 2,
+      "pageSize": 10,
+      "totalElements": 12,
+      "items": [
+        {
+          "id": 101,
+          "productId": 1,
+          "productName": "Phở bò",
+          "orderItemId": 1001,
+          "userId": 5,
+          "userName": "Nguyễn Văn A",
+          "rating": 5,
+          "content": "Món ngon, giao nhanh",
+          "status": "APPROVED",
+          "reportCount": 0,
+          "sellerReply": "Cảm ơn bạn đã ủng hộ!",
+          "rejectionReason": null,
+          "sellerReplyAt": "2026-03-27T10:30:00",
+          "createdAt": "2026-03-27T09:00:00",
+          "updatedAt": "2026-03-27T10:30:00"
+        }
+      ]
+    }
+  }
+}
+```
+
+---
+
+### 13.2 Tạo review mới
+**POST** `/reviews`
+
+| Auth |
+|------|
+| Bắt buộc |
+
+**Request:**
+```json
+{
+  "orderItemId": 1001,
+  "rating": 5,
+  "content": "Món ăn rất ngon, đóng gói cẩn thận"
+}
+```
+
+**Validation / Business Rules:**
+- `orderItemId` phải thuộc về user đang đăng nhập
+- Đơn hàng chứa `orderItemId` phải có trạng thái `COMPLETED`
+- Mỗi `orderItemId` chỉ được review 1 lần
+- `rating` trong khoảng `1..5`
+- API có rate limiting để chống spam
+- Nội dung sẽ được sanitize để giảm nguy cơ XSS
+- Nếu nội dung chứa từ khóa cấm, review sẽ bị `REJECTED` ngay
+- Nếu hợp lệ bình thường, review mặc định `PENDING`
+
+**Response (201):**
+```json
+{
+  "status": 201,
+  "message": "Tao review thanh cong",
+  "data": {
+    "id": 101,
+    "productId": 1,
+    "productName": "Phở bò",
+    "orderItemId": 1001,
+    "userId": 5,
+    "userName": "Nguyễn Văn A",
+    "rating": 5,
+    "content": "Món ăn rất ngon, đóng gói cẩn thận",
+    "status": "PENDING",
+    "reportCount": 0,
+    "sellerReply": null,
+    "rejectionReason": null,
+    "sellerReplyAt": null,
+    "createdAt": "2026-03-27T09:00:00",
+    "updatedAt": "2026-03-27T09:00:00"
+  }
+}
+```
+
+---
+
+### 13.3 Người bán trả lời review
+**POST** `/seller/reviews/{id}/reply`
+
+| Auth |
+|------|
+| Seller-side / hiện tại backend đang bảo vệ bằng ADMIN |
+
+**Request:**
+```json
+{
+  "reply": "Cảm ơn bạn đã phản hồi, shop sẽ tiếp tục cải thiện."
+}
+```
+
+**Rule:**
+- Chỉ trả lời được review đã `APPROVED`
+- Mỗi review chỉ trả lời 1 lần
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Tra loi review thanh cong",
+  "data": {
+    "id": 101,
+    "productId": 1,
+    "productName": "Phở bò",
+    "orderItemId": 1001,
+    "userId": 5,
+    "userName": "Nguyễn Văn A",
+    "rating": 5,
+    "content": "Món ngon, giao nhanh",
+    "status": "APPROVED",
+    "reportCount": 0,
+    "sellerReply": "Cảm ơn bạn đã phản hồi, shop sẽ tiếp tục cải thiện.",
+    "rejectionReason": null,
+    "sellerReplyAt": "2026-03-27T10:30:00",
+    "createdAt": "2026-03-27T09:00:00",
+    "updatedAt": "2026-03-27T10:30:00"
+  }
+}
+```
+
+---
+
+### 13.4 Danh sách đơn hàng / sản phẩm có thể review
+**GET** `/users/me/reviewable-orders`
+
+| Auth |
+|------|
+| Bắt buộc |
+
+**Mô tả:**
+- Chỉ lấy các `order item` thuộc user
+- Đơn hàng phải ở trạng thái `COMPLETED`
+- Loại bỏ các item đã có review
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Lay danh sach order co the review thanh cong",
+  "data": [
+    {
+      "orderId": 10,
+      "status": "COMPLETED",
+      "createdAt": "2026-03-25T18:00:00",
+      "items": [
+        {
+          "orderItemId": 1001,
+          "productId": 1,
+          "productName": "Phở bò",
+          "imageUrl": "https://example.com/images/pho-bo.jpg",
+          "quantity": 2
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### 13.5 Admin lấy danh sách review cần duyệt
+**GET** `/admin/reviews?productId=1&userId=5&status=PENDING&minReportCount=3&page=0&size=10`
+
+**Query params:**
+- `productId` - lọc theo sản phẩm (optional)
+- `userId` - lọc theo user review (optional)
+- `status` - `PENDING|APPROVED|REJECTED` (optional)
+- `minReportCount` - ngưỡng report tối thiểu (optional, default hiện tại là `3`)
+- `page`, `size`, `sort`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Mô tả:**
+- Nếu không truyền filter, API ưu tiên lấy review `PENDING` hoặc review bị report nhiều
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Lay danh sach review can duyet thanh cong",
+  "data": {
+    "currentPage": 1,
+    "totalPages": 1,
+    "pageSize": 10,
+    "totalElements": 1,
+    "items": [
+      {
+        "id": 101,
+        "productId": 1,
+        "productName": "Phở bò",
+        "orderItemId": 1001,
+        "userId": 5,
+        "userName": "Nguyễn Văn A",
+        "rating": 5,
+        "content": "Món ăn rất ngon",
+        "status": "PENDING",
+        "reportCount": 0,
+        "sellerReply": null,
+        "rejectionReason": null,
+        "sellerReplyAt": null,
+        "createdAt": "2026-03-27T09:00:00",
+        "updatedAt": "2026-03-27T09:00:00"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 13.6 Admin duyệt / từ chối review
+**PATCH** `/admin/reviews/{id}/status`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Request approve:**
+```json
+{
+  "status": "APPROVED",
+  "rejectionReason": null
+}
+```
+
+**Request reject:**
+```json
+{
+  "status": "REJECTED",
+  "rejectionReason": "Nội dung không phù hợp với chính sách kiểm duyệt"
+}
+```
+
+**Rule:**
+- Chỉ chấp nhận `APPROVED` hoặc `REJECTED`
+- Khi `APPROVED`: publish event để cập nhật bảng `product_stats` bất đồng bộ
+- Khi `REJECTED`: bắt buộc có `rejectionReason` và gửi email cho user
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Cap nhat trang thai review thanh cong",
+  "data": {
+    "id": 101,
+    "productId": 1,
+    "productName": "Phở bò",
+    "orderItemId": 1001,
+    "userId": 5,
+    "userName": "Nguyễn Văn A",
+    "rating": 5,
+    "content": "Món ăn rất ngon",
+    "status": "APPROVED",
+    "reportCount": 0,
+    "sellerReply": null,
+    "rejectionReason": null,
+    "sellerReplyAt": null,
+    "createdAt": "2026-03-27T09:00:00",
+    "updatedAt": "2026-03-27T10:00:00"
+  }
+}
+```
+
+---
+
+### 13.7 Enum mới liên quan Review
+- `ReviewStatus`: `PENDING` | `APPROVED` | `REJECTED`
+
+### 13.8 Ghi chú phân quyền cho Review APIs
+- `GET /products/{id}/reviews`: Public
+- `POST /reviews`: User đăng nhập
+- `GET /users/me/reviewable-orders`: User đăng nhập
+- `GET /admin/reviews`, `PATCH /admin/reviews/{id}/status`: ADMIN
+- `POST /seller/reviews/{id}/reply`: seller-side, hiện tại backend đang map bằng quyền `ADMIN`

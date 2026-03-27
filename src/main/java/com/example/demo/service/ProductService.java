@@ -7,13 +7,11 @@ import com.example.demo.dto.response.PageResponse;
 import com.example.demo.dto.response.ProductResponse;
 import com.example.demo.entity.Category;
 import com.example.demo.entity.Product;
-import com.example.demo.entity.User;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.mapper.ProductMapper;
 import com.example.demo.repository.CategoryRepository;
 import com.example.demo.repository.ProductLikeRepository;
 import com.example.demo.repository.ProductRepository;
-import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.specification.ProductSpecification;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,13 +31,13 @@ public class ProductService {
     private final ProductMapper productMapper;
     private final CategoryRepository categoryRepository;
     private final ProductLikeRepository productLikeRepository;
-    private final UserRepository userRepository;
 
     @Transactional
     public ProductResponse create(@Valid ProductCreationRequest request) {
         Product product = productMapper.toEntity(request);
 
-        Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(() -> new ResourceNotFoundException("Category", "id", request.getCategoryId()));
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category", "id", request.getCategoryId()));
         product.setCategory(category);
         product.setIsActive(true);
         return productMapper.toResponse(productRepository.save(product));
@@ -47,7 +45,8 @@ public class ProductService {
 
     @Transactional
     public ProductResponse update(Long id, ProductUpdateRequest request) {
-        Product product = productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", request.getCategoryId()));
         productMapper.updateProductFromDto(request, product);
@@ -57,51 +56,21 @@ public class ProductService {
 
     @Transactional
     public ProductResponse delete(Long id) {
-        Product product = productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
         productRepository.delete(product);
         return productMapper.toResponse(product);
     }
 
     public ProductResponse findById(Long id, Long userId) {
-        Product product = productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
         ProductResponse response = productMapper.toResponse(product);
         enrichWithLikeInfo(response, product, userId);
         return response;
     }
 
-//    public PageResponse<ProductResponse> findAll(int page, int size, String sortBy, String sortDirection, String name) {
-//        if (size > 51)
-//            size = 50;
-//        if (size < 1)
-//            size = 1;
-//        Sort sort = sortDirection.equalsIgnoreCase("asc") ?
-//                    Sort.by(Sort.Direction.ASC, sortBy) :
-//                    Sort.by(Sort.Direction.DESC, sortBy);
-//        Pageable pageable = PageRequest.of(page - 1, size, sort);
-//
-//        Page<Product> pageData;
-//
-//        if (name != null)
-//        {
-//            pageData = productRepository.findByNameContainingIgnoreCase(name, pageable);
-//        }
-//        else
-//        {
-//            pageData = productRepository.findAll(pageable);
-//        }
-//
-//        List<ProductResponse> response = pageData.getContent().stream()
-//                .map(productMapper::toResponse).collect(Collectors.toList());
-//        return PageResponse.<ProductResponse>builder()
-//                .currentPage(page)
-//                .pageSize(pageData.getSize())
-//                .totalPages(pageData.getTotalPages())
-//                .totalElements(pageData.getTotalElements())
-//                .items(response)
-//                .build();
-//    }
-
-    public PageResponse<ProductResponse> search(ProductSearchRequest request, Pageable pageable) {
+    public PageResponse<ProductResponse> search(ProductSearchRequest request, Pageable pageable, Long userId) {
         int validatedSize = Math.min(pageable.getPageSize(), 50);
 
         Pageable finalPageable = PageRequest.of(
@@ -113,15 +82,16 @@ public class ProductService {
         Specification<Product> spec = Specification
                 .allOf(ProductSpecification.hasCategory(request.getCategoryId())
                         .and(ProductSpecification.hasName(request.getName())
-                        .and(ProductSpecification.hasPrice(request.getMinPrice(), request.getMaxPrice()))));
+                                .and(ProductSpecification.hasPrice(request.getMinPrice(), request.getMaxPrice()))));
 
         Page<Product> pageData = productRepository.findAll(spec, finalPageable);
         List<ProductResponse> response = pageData.getContent().stream()
-                .map(p -> {
-                    ProductResponse pr = productMapper.toResponse(p);
-//                    enrichWithLikeInfo(pr, p, userId);
-                    return pr;
-                }).toList();
+                .map(product -> {
+                    ProductResponse productResponse = productMapper.toResponse(product);
+                    enrichWithLikeInfo(productResponse, product, userId);
+                    return productResponse;
+                })
+                .toList();
 
         return PageResponse.<ProductResponse>builder()
                 .pageSize(pageData.getSize())
@@ -133,12 +103,7 @@ public class ProductService {
     }
 
     private void enrichWithLikeInfo(ProductResponse response, Product product, Long userId) {
-        response.setLikeCount(productLikeRepository.countByProduct(product));
-        if (userId != null) {
-            User user = userRepository.findById(userId).orElse(null);
-            response.setLiked(user != null && productLikeRepository.existsByUserAndProduct(user, product));
-        } else {
-            response.setLiked(false);
-        }
+        response.setLikeCount(productLikeRepository.countByProductId(product.getId()));
+        response.setLiked(userId != null && productLikeRepository.existsByUserIdAndProductId(userId, product.getId()));
     }
 }

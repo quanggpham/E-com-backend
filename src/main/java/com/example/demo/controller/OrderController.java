@@ -4,19 +4,23 @@ import com.example.demo.dto.request.CheckoutRequest;
 import com.example.demo.dto.response.ApiResponse;
 import com.example.demo.dto.response.OrderResponse;
 import com.example.demo.dto.response.PageResponse;
-import com.example.demo.entity.User;
+import com.example.demo.enums.OrderStatus;
 import com.example.demo.security.UserPrincipal;
 import com.example.demo.service.OrderService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.web.ServerProperties;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -29,10 +33,10 @@ public class OrderController {
     public ResponseEntity<ApiResponse<OrderResponse>> checkout(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestBody CheckoutRequest checkoutRequest
-            ) {
+    ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse.<OrderResponse>builder()
-                        .message("Đặt đơn hàng thành công")
+                        .message("Dat don hang thanh cong")
                         .status(HttpStatus.CREATED.value())
                         .data(orderService.createOrder(userPrincipal.getId(), checkoutRequest))
                         .build()
@@ -43,10 +47,10 @@ public class OrderController {
     public ResponseEntity<ApiResponse<OrderResponse>> getById(
             @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal userPrincipal
-    ){
+    ) {
         return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.<OrderResponse>builder()
-                        .message("Xem chi tiết đơn hàng thành công")
+                        .message("Xem chi tiet don hang thanh cong")
                         .data(orderService.getById(id, userPrincipal.getId()))
                         .status(HttpStatus.OK.value())
                         .build()
@@ -61,7 +65,7 @@ public class OrderController {
         orderService.cancelOrder(id, userPrincipal.getId());
         return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.<Void>builder()
-                        .message("Hủy đơn hàng thành công")
+                        .message("Huy don hang thanh cong")
                         .status(HttpStatus.OK.value())
                         .build()
         );
@@ -70,16 +74,15 @@ public class OrderController {
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<OrderResponse>>> getOrdersByUserId(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam(required = false) OrderStatus status,
             @PageableDefault(size = 10, page = 0) Pageable pageable
     ) {
         return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.<PageResponse<OrderResponse>>builder()
-                        .message("Xem danh sách đơn hàng thành công")
+                        .message("Xem danh sach don hang thanh cong")
                         .status(HttpStatus.OK.value())
-                        .data(orderService.getAllByUserId(userPrincipal.getId(), pageable))
+                        .data(orderService.getAllByUserId(userPrincipal.getId(), pageable, status))
                         .build()
         );
     }
-
-
 }

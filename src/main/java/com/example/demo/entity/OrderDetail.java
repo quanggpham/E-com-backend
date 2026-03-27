@@ -31,4 +31,7 @@ public class OrderDetail {
 
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
+
+    @OneToOne(mappedBy = "orderDetail", fetch = FetchType.LAZY)
+    private Review review;
 }

@@ -19,6 +19,8 @@ import java.util.List;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
     Page<Order> findAllByUserId(Long userId, Pageable pageable);
+    Page<Order> findAllByUserIdAndStatus(Long userId, OrderStatus status, Pageable pageable);
+    Page<Order> findAllByStatus(OrderStatus status, Pageable pageable);
 
     @Query("SELECT new com.example.demo.dto.response.OverviewStatisticResponse(" +
             "COUNT(o.id), " +
