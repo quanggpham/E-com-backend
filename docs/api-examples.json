@@ -185,6 +185,95 @@
         "url": "/products/1",
         "auth": false
       }
+    },
+    "banners": {
+      "listActive": {
+        "method": "GET",
+        "url": "/banners",
+        "auth": false
+      },
+      "adminList": {
+        "method": "GET",
+        "url": "/admin/banners?page=0&size=10",
+        "auth": true
+      },
+      "adminGetById": {
+        "method": "GET",
+        "url": "/admin/banners/1",
+        "auth": true
+      },
+      "adminCreate": {
+        "method": "POST",
+        "url": "/admin/banners",
+        "auth": true,
+        "body": {
+          "title": "Phở Bò Hà Nội",
+          "subtitle": "Hương vị truyền thống",
+          "description": "Phở bò truyền thống với nước dùng đậm đà.",
+          "imageUrl": "https://example.com/banners/pho-bo.jpg",
+          "linkUrl": "/products/1",
+          "badgeText": "Best Seller",
+          "badgeIcon": "FLAME",
+          "overlayColor": "from-amber-500/80",
+          "displayOrder": 0,
+          "isActive": true,
+          "startDate": "2026-04-10T00:00:00",
+          "endDate": "2026-05-01T23:59:59"
+        }
+      },
+      "adminUpdate": {
+        "method": "PUT",
+        "url": "/admin/banners/1",
+        "auth": true,
+        "body": {
+          "title": "Bánh Mì Đặc Biệt",
+          "subtitle": "Giòn ngon mỗi ngày",
+          "description": "Bánh mì nóng giòn, nhân đầy đặn.",
+          "imageUrl": "https://example.com/banners/banh-mi.jpg",
+          "linkUrl": "/products/2",
+          "badgeText": "Giảm 20%",
+          "badgeIcon": "TAG",
+          "overlayColor": "from-orange-500/80",
+          "displayOrder": 1,
+          "isActive": true,
+          "startDate": null,
+          "endDate": null
+        }
+      },
+      "adminDelete": {
+        "method": "DELETE",
+        "url": "/admin/banners/1",
+        "auth": true
+      },
+      "adminChangeStatus": {
+        "method": "PATCH",
+        "url": "/admin/banners/1/status?active=false",
+        "auth": true
+      },
+      "adminReorder": {
+        "method": "PATCH",
+        "url": "/admin/banners/reorder",
+        "auth": true,
+        "body": [
+          {
+            "id": 1,
+            "displayOrder": 0
+          },
+          {
+            "id": 2,
+            "displayOrder": 1
+          }
+        ]
+      },
+      "uploadImage": {
+        "method": "POST",
+        "url": "/media/upload",
+        "auth": true,
+        "contentType": "multipart/form-data",
+        "formData": {
+          "file": "<binary>"
+        }
+      }
     }
   }
 }

@@ -39,6 +39,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/payments/**").permitAll()
                         .requestMatchers("/api/v1/ai/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/banners/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         .requestMatchers("/api/v1/users/me/**").authenticated()

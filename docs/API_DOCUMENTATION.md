@@ -2,7 +2,7 @@
 
 **Base URL:** `http://localhost:8080/api/v1`
 
-**Chung:** Mọi API cần xác thực (trừ Auth, Products GET, Categories GET) đều cần header:
+**Chung:** Mọi API cần xác thực (trừ Auth, Products GET, Categories GET, Banners GET) đều cần header:
 ```
 Authorization: Bearer <token>
 Content-Type: application/json
@@ -595,7 +595,302 @@ Content-Type: application/json
 
 ---
 
-## 9. AI Chat (`/api/v1/ai`)
+## 9. Banner (`/api/v1/banners`, `/api/v1/admin/banners`)
+
+### 9.1 Lấy danh sách banner đang hiển thị
+**GET** `/banners`
+
+| Auth |
+|------|
+| Không |
+
+**Mô tả:**
+- Chỉ trả về banner có `isActive = true`
+- Chỉ trả về banner đang nằm trong thời gian hiển thị hợp lệ:
+  `(startDate == null || startDate <= now) && (endDate == null || endDate >= now)`
+- Sắp xếp theo `displayOrder ASC`, sau đó đến `id ASC`
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Lấy danh sách banner đang hiển thị thành công",
+  "data": [
+    {
+      "id": 1,
+      "title": "Phở Bò Hà Nội",
+      "subtitle": "Hương vị truyền thống",
+      "description": "Phở bò truyền thống với nước dùng đậm đà.",
+      "imageUrl": "https://example.com/banners/pho-bo.jpg",
+      "linkUrl": "/products/1",
+      "badgeText": "Best Seller",
+      "badgeIcon": "FLAME",
+      "overlayColor": "from-amber-500/80",
+      "displayOrder": 0,
+      "isActive": true,
+      "startDate": null,
+      "endDate": null,
+      "createdAt": "2026-04-08T09:00:00",
+      "updatedAt": "2026-04-08T09:00:00"
+    }
+  ]
+}
+```
+
+---
+
+### 9.2 Admin lấy tất cả banner
+**GET** `/admin/banners?page=0&size=10`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Mô tả:**
+- Trả về toàn bộ banner, gồm cả `inactive`
+- Có phân trang
+- Mặc định sắp xếp theo `displayOrder ASC`, sau đó đến `id ASC`
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Lấy danh sách banner thành công",
+  "data": {
+    "currentPage": 1,
+    "totalPages": 1,
+    "pageSize": 10,
+    "totalElements": 2,
+    "items": [
+      {
+        "id": 1,
+        "title": "Phở Bò Hà Nội",
+        "subtitle": "Hương vị truyền thống",
+        "description": "Phở bò truyền thống với nước dùng đậm đà.",
+        "imageUrl": "https://example.com/banners/pho-bo.jpg",
+        "linkUrl": "/products/1",
+        "badgeText": "Best Seller",
+        "badgeIcon": "FLAME",
+        "overlayColor": "from-amber-500/80",
+        "displayOrder": 0,
+        "isActive": true,
+        "startDate": null,
+        "endDate": null,
+        "createdAt": "2026-04-08T09:00:00",
+        "updatedAt": "2026-04-08T09:00:00"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 9.3 Admin lấy chi tiết banner
+**GET** `/admin/banners/{id}`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Response (200):** Giống object trong `items` của 9.2
+
+---
+
+### 9.4 Admin tạo banner
+**POST** `/admin/banners`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Request:**
+```json
+{
+  "title": "Phở Bò Hà Nội",
+  "subtitle": "Hương vị truyền thống",
+  "description": "Phở bò truyền thống với nước dùng đậm đà.",
+  "imageUrl": "https://example.com/banners/pho-bo.jpg",
+  "linkUrl": "/products/1",
+  "badgeText": "Best Seller",
+  "badgeIcon": "FLAME",
+  "overlayColor": "from-amber-500/80",
+  "displayOrder": 0,
+  "isActive": true,
+  "startDate": "2026-04-10T00:00:00",
+  "endDate": "2026-05-01T23:59:59"
+}
+```
+
+**Validation / Business Rules:**
+- `title` là bắt buộc
+- `imageUrl` là bắt buộc
+- `displayOrder` phải `>= 0`
+- Nếu có đủ cả `startDate` và `endDate` thì `startDate` không được lớn hơn `endDate`
+- `badgeIcon` hỗ trợ: `FLAME | STAR | TAG | GIFT | NONE`
+
+**Response (201):**
+```json
+{
+  "status": 201,
+  "message": "Tạo banner thành công",
+  "data": {
+    "id": 1,
+    "title": "Phở Bò Hà Nội",
+    "subtitle": "Hương vị truyền thống",
+    "description": "Phở bò truyền thống với nước dùng đậm đà.",
+    "imageUrl": "https://example.com/banners/pho-bo.jpg",
+    "linkUrl": "/products/1",
+    "badgeText": "Best Seller",
+    "badgeIcon": "FLAME",
+    "overlayColor": "from-amber-500/80",
+    "displayOrder": 0,
+    "isActive": true,
+    "startDate": "2026-04-10T00:00:00",
+    "endDate": "2026-05-01T23:59:59",
+    "createdAt": "2026-04-08T09:00:00",
+    "updatedAt": "2026-04-08T09:00:00"
+  }
+}
+```
+
+---
+
+### 9.5 Admin cập nhật banner
+**PUT** `/admin/banners/{id}`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Request:** Giống 9.4
+
+**Response (200):** Giống object trong 9.4
+
+---
+
+### 9.6 Admin xóa banner
+**DELETE** `/admin/banners/{id}`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Response (204):**
+```json
+{
+  "status": 204,
+  "message": "Xóa banner thành công",
+  "data": null
+}
+```
+
+---
+
+### 9.7 Admin bật/tắt nhanh banner
+**PATCH** `/admin/banners/{id}/status?active=true`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Query params:** `active=true|false`
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Đã kích hoạt banner"
+}
+```
+hoặc
+```json
+{
+  "status": 200,
+  "message": "Đã vô hiệu hóa banner"
+}
+```
+
+---
+
+### 9.8 Admin cập nhật thứ tự hiển thị hàng loạt
+**PATCH** `/admin/banners/reorder`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Request:**
+```json
+[
+  {
+    "id": 1,
+    "displayOrder": 0
+  },
+  {
+    "id": 2,
+    "displayOrder": 1
+  }
+]
+```
+
+**Tại sao request cần `id`:**
+- API này cập nhật thứ tự cho nhiều banner cùng lúc
+- `id` dùng để xác định chính xác banner nào đang được gán `displayOrder` mới
+- Nếu chỉ gửi mảng số thứ tự, backend sẽ không biết thứ tự đó thuộc banner nào
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Cập nhật thứ tự banner thành công",
+  "data": [
+    {
+      "id": 1,
+      "title": "Phở Bò Hà Nội",
+      "subtitle": "Hương vị truyền thống",
+      "description": "Phở bò truyền thống với nước dùng đậm đà.",
+      "imageUrl": "https://example.com/banners/pho-bo.jpg",
+      "linkUrl": "/products/1",
+      "badgeText": "Best Seller",
+      "badgeIcon": "FLAME",
+      "overlayColor": "from-amber-500/80",
+      "displayOrder": 0,
+      "isActive": true,
+      "startDate": null,
+      "endDate": null,
+      "createdAt": "2026-04-08T09:00:00",
+      "updatedAt": "2026-04-08T09:15:00"
+    }
+  ]
+}
+```
+
+---
+
+### 9.9 Upload ảnh banner
+**POST** `/media/upload`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Mô tả:**
+- Dùng `multipart/form-data`
+- Upload qua media API hiện có để lấy `imageUrl`, sau đó truyền URL này vào `POST /admin/banners` hoặc `PUT /admin/banners/{id}`
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Tải ảnh lên thành công",
+  "data": "https://res.cloudinary.com/.../banner.jpg"
+}
+```
+
+---
+
+## 10. AI Chat (`/api/v1/ai`)
 
 ### 9.1 Chat (JSON)
 **GET** `/ai/chat?message=Quán có món gì ngon?`
@@ -622,7 +917,7 @@ Content-Type: application/json
 
 ---
 
-## 10. Enums tham khảo
+## 11. Enums tham khảo
 
 ### PaymentMethod
 `COD` | `BANK_TRANSFER` | `CREDIT` | `VNPAY` | `MOMO` | `SEPAY`
@@ -633,21 +928,24 @@ Content-Type: application/json
 ### Role
 `USER` | `ADMIN`
 
+### BannerBadgeIcon
+`FLAME` | `STAR` | `TAG` | `GIFT` | `NONE`
+
 ---
 
-## 11. Phân quyền
+## 12. Phân quyền
 
 | Endpoint | Quyền |
 |----------|-------|
 | `/auth/**` | Public |
-| `GET /categories/**`, `GET /products/**` | Public |
+| `GET /categories/**`, `GET /products/**`, `GET /banners/**` | Public |
 | `/ai/**`, `/payments/**` | Public |
 | `/profile/**`, `/addresses/**`, `/carts/**`, `/orders/**`, `GET /coupons/calculate` | Đăng nhập |
-| `/users/**`, `/admin/**`, `POST|PUT|DELETE /categories/**`, `/coupons/**` (trừ calculate) | ADMIN |
+| `/users/**`, `/admin/**`, `POST|PUT|DELETE /categories/**`, `/coupons/**` (trừ calculate), `/media/upload` | ADMIN |
 
 ---
 
-## 12. Mã lỗi thường gặp
+## 13. Mã lỗi thường gặp
 
 | HTTP | Ý nghĩa |
 |------|---------|
@@ -658,7 +956,7 @@ Content-Type: application/json
 | 500 | Server Error - Lỗi hệ thống |
 ---
 
-## 13. Review & Rating APIs
+## 14. Review & Rating APIs
 
 ### 13.1 Lấy danh sách review của sản phẩm
 **GET** `/products/{id}/reviews?rating=5&page=0&size=10&sort=createdAt,desc`
