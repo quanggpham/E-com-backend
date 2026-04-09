@@ -2,7 +2,7 @@
 
 **Base URL:** `http://localhost:8080/api/v1`
 
-**Chung:** Mọi API cần xác thực (trừ Auth, Products GET, Categories GET, Banners GET) đều cần header:
+**Chung:** Mọi API cần xác thực (trừ Auth, Products GET, Categories GET, Banners GET, Promotion Banners GET, Stripe Webhook) đều cần header:
 ```
 Authorization: Bearer <token>
 Content-Type: application/json
@@ -365,7 +365,7 @@ Content-Type: application/json
 
 ## 5. Đơn hàng (`/api/v1/orders`)
 
-### 5.1 Đặt hàng (Checkout)
+### 5.1 Tạo đơn hàng
 **POST** `/orders`
 
 **Request:**
@@ -390,7 +390,13 @@ Content-Type: application/json
 }
 ```
 
-**paymentMethod:** `COD` | `BANK_TRANSFER` | `CREDIT` | `VNPAY` | `MOMO` | `SEPAY`
+**paymentMethod:** `COD` | `BANK_TRANSFER` | `CREDIT` | `VNPAY` | `MOMO` | `SEPAY` | `STRIPE`
+
+**Lưu ý nghiệp vụ:**
+- API này tạo order, không đồng nghĩa thanh toán online đã hoàn tất
+- Với `COD`: tạo đơn xong là hoàn tất bước checkout phía backend
+- Với `STRIPE`: cần gọi thêm payment API để tạo phiên thanh toán Stripe
+- Đơn `STRIPE` chỉ được coi là thanh toán thành công sau khi webhook Stripe gọi về backend
 
 **Response (201):**
 ```json
@@ -480,17 +486,261 @@ Content-Type: application/json
 
 ## 6. Mã giảm giá (`/api/v1/coupons`)
 
-### 6.1 Tính tiền giảm giá (User)
-**GET** `/coupons/calculate?code=GIAM50K&amount=200000`
+### 6.1 Tạo mã giảm giá (Admin)
+**POST** `/coupons`
 
-**Query params:** `code`, `amount` (BigDecimal)
+| Auth |
+|------|
+| ADMIN |
+
+**Request:**
+```json
+{
+  "code": "GIAM20SP",
+  "discountType": "PERCENTAGE",
+  "discountValue": 20,
+  "maxDiscountAmount": 50000,
+  "promotionType": "PRODUCT",
+  "categoryId": null,
+  "productId": 42,
+  "minOrderValue": 100000,
+  "usageLimit": 100,
+  "startDate": "2026-04-10",
+  "expirationDate": "2026-05-01",
+  "active": true
+}
+```
+
+**Business Rules:**
+- `promotionType=ORDER`: không được truyền `categoryId`, `productId`
+- `promotionType=CATEGORY`: bắt buộc có `categoryId`, không được có `productId`
+- `promotionType=PRODUCT`: bắt buộc có `productId`, không được có `categoryId`
+- `discountType=PERCENTAGE`: bắt buộc có `maxDiscountAmount`
+
+**Response (201):**
+```json
+{
+  "status": 201,
+  "message": "Tạo mã giảm giá thành công",
+  "data": {
+    "id": 1,
+    "code": "GIAM20SP",
+    "discountType": "PERCENTAGE",
+    "discountValue": 20,
+    "maxDiscountAmount": 50000,
+    "promotionType": "PRODUCT",
+    "categoryId": null,
+    "productId": 42,
+    "minOrderValue": 100000,
+    "usageLimit": 100,
+    "usedCount": 0,
+    "startDate": "2026-04-10",
+    "expirationDate": "2026-05-01",
+    "active": true,
+    "createdAt": "2026-04-08"
+  }
+}
+```
+
+---
+
+### 5.5 Thanh toán đơn bằng Stripe
+**POST** `/payments/{id}/stripe/checkout`
+
+| Auth |
+|------|
+| Đăng nhập |
+
+**Mô tả:**
+- Chỉ chủ sở hữu đơn hàng mới gọi được API này
+- Đơn hàng phải được tạo với `paymentMethod = STRIPE`
+- API tạo Stripe Checkout Session và trả URL để frontend redirect
+
+**Response (201):**
+```json
+{
+  "status": 201,
+  "message": "Tạo phiên thanh toán Stripe thành công",
+  "data": {
+    "sessionId": "cs_test_a1b2c3",
+    "checkoutUrl": "https://checkout.stripe.com/c/pay/cs_test_a1b2c3",
+    "publishableKey": "pk_test_123456"
+  }
+}
+```
+
+---
+
+### 5.6 Stripe webhook
+**POST** `/payments/stripe/webhook`
+
+| Auth |
+|------|
+| Không |
+
+**Mô tả:**
+- Endpoint này chỉ dành cho Stripe server gọi vào
+- Backend xác thực bằng header `Stripe-Signature`
+- Khi nhận `checkout.session.completed`, backend cập nhật payment thành công và xác nhận đơn hàng
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Đã xử lý webhook Stripe"
+}
+```
+
+---
+
+### 6.2 Danh sách mã giảm giá (Admin)
+**GET** `/coupons?promotionType=PRODUCT&categoryId=3&productId=42&page=0&size=10`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Query params:**
+- `promotionType` - `ORDER | CATEGORY | PRODUCT` (optional)
+- `categoryId` (optional)
+- `productId` (optional)
+- `page`, `size`, `sort`
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Lấy danh sách mã giảm giá thành công",
+  "data": {
+    "currentPage": 1,
+    "totalPages": 1,
+    "pageSize": 10,
+    "totalElements": 1,
+    "items": [
+      {
+        "id": 1,
+        "code": "GIAM20SP",
+        "discountType": "PERCENTAGE",
+        "discountValue": 20,
+        "maxDiscountAmount": 50000,
+        "promotionType": "PRODUCT",
+        "categoryId": null,
+        "productId": 42,
+        "minOrderValue": 100000,
+        "usageLimit": 100,
+        "usedCount": 0,
+        "startDate": "2026-04-10",
+        "expirationDate": "2026-05-01",
+        "active": true,
+        "createdAt": "2026-04-08"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 6.3 Chi tiết mã giảm giá (Admin)
+**GET** `/coupons/{id}`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Response (200):** Giống object trong `items` của 6.2
+
+---
+
+### 6.4 Cập nhật mã giảm giá (Admin)
+**PUT** `/coupons/{id}`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Request:** Giống 6.1
+
+**Response (200):** Giống object trong 6.1
+
+---
+
+### 6.5 Xóa mã giảm giá (Admin)
+**DELETE** `/coupons/{id}`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Response (204):**
+```json
+{
+  "status": 204,
+  "message": "Xóa mã giảm giá thành công",
+  "data": null
+}
+```
+
+---
+
+### 6.6 Bật/tắt mã giảm giá (Admin)
+**PATCH** `/coupons/{id}/status?active=true`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Đã kích hoạt mã giảm giá"
+}
+```
+
+---
+
+### 6.7 Tính tiền giảm giá (User)
+**POST** `/coupons/calculate`
+
+| Auth |
+|------|
+| Đăng nhập |
+
+**Request:**
+```json
+{
+  "code": "GIAM20SP",
+  "items": [
+    {
+      "productId": 42,
+      "quantity": 2
+    },
+    {
+      "productId": 9,
+      "quantity": 1
+    }
+  ]
+}
+```
+
+**Logic áp dụng:**
+- `ORDER`: giảm trên toàn bộ đơn hàng
+- `CATEGORY`: chỉ giảm trên tổng tiền item có cùng `categoryId`
+- `PRODUCT`: chỉ giảm trên item có `productId` khớp
+- `appliedToItems` hiện trả về danh sách `productId` được áp dụng giảm giá
+- Nếu coupon hợp lệ nhưng không khớp item nào trong đơn cho `CATEGORY/PRODUCT`, API trả lỗi nghiệp vụ
 
 **Response (200):**
 ```json
 {
   "status": 200,
   "message": "Tính toán số tiền giảm giá thành công",
-  "data": 50000
+  "data": {
+    "discountAmount": 25000,
+    "appliedToItems": [42],
+    "promotionType": "PRODUCT"
+  }
 }
 ```
 
@@ -890,7 +1140,220 @@ hoặc
 
 ---
 
-## 10. AI Chat (`/api/v1/ai`)
+## 10. Promotion Banners (`/api/v1/promotion-banners`, `/api/v1/admin/promotion-banners`)
+
+### 10.1 Lấy danh sách promotion banner đang hiển thị
+**GET** `/promotion-banners`
+
+| Auth |
+|------|
+| Không |
+
+**Mô tả:**
+- Chỉ trả về promotion banner có `isActive = true`
+- Chỉ trả về record đang nằm trong thời gian hợp lệ:
+  `(startDate == null || startDate <= now) && (endDate == null || endDate >= now)`
+- Sắp xếp theo `displayOrder ASC`, sau đó đến `id ASC`
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Lấy danh sách promotion banner thành công",
+  "data": [
+    {
+      "id": 1,
+      "title": "Combo Gia Đình",
+      "discountLabel": "Giảm 30%",
+      "couponCode": "COMBO30",
+      "description": "Ưu đãi cho đơn hàng gia đình cuối tuần.",
+      "linkUrl": "/khuyen-mai/combo-gia-dinh",
+      "bgColor": "bg-white/15",
+      "displayOrder": 0,
+      "isActive": true,
+      "startDate": null,
+      "endDate": null,
+      "createdAt": "2026-04-08T09:00:00"
+    }
+  ]
+}
+```
+
+---
+
+### 10.2 Admin lấy tất cả promotion banner
+**GET** `/admin/promotion-banners?page=0&size=10`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Lấy danh sách promotion banner thành công",
+  "data": {
+    "currentPage": 1,
+    "totalPages": 1,
+    "pageSize": 10,
+    "totalElements": 1,
+    "items": [
+      {
+        "id": 1,
+        "title": "Combo Gia Đình",
+        "discountLabel": "Giảm 30%",
+        "couponCode": "COMBO30",
+        "description": "Ưu đãi cho đơn hàng gia đình cuối tuần.",
+        "linkUrl": "/khuyen-mai/combo-gia-dinh",
+        "bgColor": "bg-white/15",
+        "displayOrder": 0,
+        "isActive": true,
+        "startDate": null,
+        "endDate": null,
+        "createdAt": "2026-04-08T09:00:00"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 10.3 Admin lấy chi tiết promotion banner
+**GET** `/admin/promotion-banners/{id}`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Response (200):** Giống object trong `items` của 10.2
+
+---
+
+### 10.4 Admin tạo promotion banner
+**POST** `/admin/promotion-banners`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Request:**
+```json
+{
+  "title": "Combo Gia Đình",
+  "discountLabel": "Giảm 30%",
+  "couponCode": "COMBO30",
+  "description": "Ưu đãi cho đơn hàng gia đình cuối tuần.",
+  "linkUrl": "/khuyen-mai/combo-gia-dinh",
+  "bgColor": "bg-white/15",
+  "displayOrder": 0,
+  "isActive": true,
+  "startDate": "2026-04-10T00:00:00",
+  "endDate": "2026-05-01T23:59:59"
+}
+```
+
+**Response (201):** Giống object trong 10.1
+
+---
+
+### 10.5 Admin cập nhật promotion banner
+**PUT** `/admin/promotion-banners/{id}`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Request:** Giống 10.4
+
+**Response (200):** Giống object trong 10.1
+
+---
+
+### 10.6 Admin xóa promotion banner
+**DELETE** `/admin/promotion-banners/{id}`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Response (204):**
+```json
+{
+  "status": 204,
+  "message": "Xóa promotion banner thành công",
+  "data": null
+}
+```
+
+---
+
+### 10.7 Admin bật/tắt promotion banner
+**PATCH** `/admin/promotion-banners/{id}/status?active=false`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Đã vô hiệu hóa promotion banner"
+}
+```
+
+---
+
+### 10.8 Admin sắp xếp promotion banner hàng loạt
+**PATCH** `/admin/promotion-banners/reorder`
+
+| Auth |
+|------|
+| ADMIN |
+
+**Request:**
+```json
+[
+  {
+    "id": 1,
+    "displayOrder": 0
+  },
+  {
+    "id": 2,
+    "displayOrder": 1
+  }
+]
+```
+
+**Response (200):**
+```json
+{
+  "status": 200,
+  "message": "Cập nhật thứ tự promotion banner thành công",
+  "data": [
+    {
+      "id": 1,
+      "title": "Combo Gia Đình",
+      "discountLabel": "Giảm 30%",
+      "couponCode": "COMBO30",
+      "description": "Ưu đãi cho đơn hàng gia đình cuối tuần.",
+      "linkUrl": "/khuyen-mai/combo-gia-dinh",
+      "bgColor": "bg-white/15",
+      "displayOrder": 0,
+      "isActive": true,
+      "startDate": null,
+      "endDate": null,
+      "createdAt": "2026-04-08T09:00:00"
+    }
+  ]
+}
+```
+
+---
+
+## 11. AI Chat (`/api/v1/ai`)
 
 ### 9.1 Chat (JSON)
 **GET** `/ai/chat?message=Quán có món gì ngon?`
@@ -917,10 +1380,10 @@ hoặc
 
 ---
 
-## 11. Enums tham khảo
+## 12. Enums tham khảo
 
 ### PaymentMethod
-`COD` | `BANK_TRANSFER` | `CREDIT` | `VNPAY` | `MOMO` | `SEPAY`
+`COD` | `BANK_TRANSFER` | `CREDIT` | `VNPAY` | `MOMO` | `SEPAY` | `STRIPE`
 
 ### OrderStatus
 `PENDING` | `CONFIRMED` | `SHIPPING` | `COMPLETED` | `CANCELLED`
@@ -931,21 +1394,25 @@ hoặc
 ### BannerBadgeIcon
 `FLAME` | `STAR` | `TAG` | `GIFT` | `NONE`
 
+### PromotionType
+`ORDER` | `CATEGORY` | `PRODUCT`
+
 ---
 
-## 12. Phân quyền
+## 13. Phân quyền
 
 | Endpoint | Quyền |
 |----------|-------|
 | `/auth/**` | Public |
-| `GET /categories/**`, `GET /products/**`, `GET /banners/**` | Public |
-| `/ai/**`, `/payments/**` | Public |
-| `/profile/**`, `/addresses/**`, `/carts/**`, `/orders/**`, `GET /coupons/calculate` | Đăng nhập |
+| `GET /categories/**`, `GET /products/**`, `GET /banners/**`, `GET /promotion-banners/**` | Public |
+| `/ai/**`, `POST /payments/stripe/webhook` | Public |
+| `/profile/**`, `/addresses/**`, `/carts/**`, `/orders/**`, `POST /coupons/calculate` | Đăng nhập |
+| `POST /payments/{id}/checkout`, `POST /payments/{id}/stripe/checkout` | Đăng nhập |
 | `/users/**`, `/admin/**`, `POST|PUT|DELETE /categories/**`, `/coupons/**` (trừ calculate), `/media/upload` | ADMIN |
 
 ---
 
-## 13. Mã lỗi thường gặp
+## 14. Mã lỗi thường gặp
 
 | HTTP | Ý nghĩa |
 |------|---------|
@@ -956,7 +1423,7 @@ hoặc
 | 500 | Server Error - Lỗi hệ thống |
 ---
 
-## 14. Review & Rating APIs
+## 15. Review & Rating APIs
 
 ### 13.1 Lấy danh sách review của sản phẩm
 **GET** `/products/{id}/reviews?rating=5&page=0&size=10&sort=createdAt,desc`

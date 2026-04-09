@@ -9,6 +9,7 @@ import com.example.demo.entity.OrderDetail;
 import com.example.demo.entity.Product;
 import com.example.demo.entity.User;
 import com.example.demo.enums.OrderStatus;
+import com.example.demo.enums.PaymentMethod;
 import com.example.demo.exception.AccessDeniedException;
 import com.example.demo.exception.BusinessException;
 import com.example.demo.exception.ResourceNotFoundException;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -54,6 +56,7 @@ public class OrderService {
                 .build();
 
         BigDecimal subTotal = BigDecimal.ZERO;
+        List<CartItemRequest> pricingItems = new ArrayList<>();
 
         for (CartItemRequest item : request.getItems())
         {
@@ -65,6 +68,7 @@ public class OrderService {
 
             product.setStockQuantity(product.getStockQuantity() - item.getQuantity());
             subTotal = subTotal.add(product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+            pricingItems.add(item);
 
 
             OrderDetail orderDetail = OrderDetail.builder()
@@ -81,7 +85,7 @@ public class OrderService {
         String code = request.getCode();
         BigDecimal discountAmount = BigDecimal.ZERO;
         if (code != null && !code.trim().isEmpty()) {
-            discountAmount = couponService.calculateDiscount(request.getCode(), subTotal, userId);
+            discountAmount = couponService.evaluateCoupon(request.getCode(), pricingItems, userId).discountAmount();
         }
 
         BigDecimal totalMoney = subTotal.subtract(discountAmount);
@@ -100,7 +104,9 @@ public class OrderService {
 
         cartItemRepository.deleteByUserIdAndProductIdIn(user.getId(), productIds);
 
-        emailService.sendOrderConfirmationEmail(savedOrder);
+        if (request.getPaymentMethod() != PaymentMethod.STRIPE) {
+            emailService.sendOrderConfirmationEmail(savedOrder);
+        }
 
         return orderMapper.toOrderResponse(savedOrder);
     }

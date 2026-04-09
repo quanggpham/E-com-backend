@@ -29,10 +29,14 @@ public class AuthenticationService {
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             throw new BusinessException("Email đã được sử dụng");
         }
+        if (userRepository.existsByPhone(registerRequest.getPhone())) {
+            throw new BusinessException("Số điện thoại đã được sử dụng");
+        }
 
         User user = User.builder()
-                .fullName(registerRequest.getName())
+                .fullName(registerRequest.getFullName())
                 .email(registerRequest.getEmail())
+                .phone(registerRequest.getPhone())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
                 .role(Role.USER)
                 .build();

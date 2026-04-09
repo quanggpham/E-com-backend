@@ -37,15 +37,16 @@ public class SecurityConfiguration {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/api/v1/payments/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/stripe/webhook").permitAll()
                         .requestMatchers("/api/v1/ai/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/banners/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/promotion-banners/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         .requestMatchers("/api/v1/users/me/**").authenticated()
                         .requestMatchers("/error").permitAll()
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/coupons/calculate").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/coupons/calculate").authenticated()
                         .requestMatchers("/api/v1/coupons/**").hasRole("ADMIN")
 
                         .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
@@ -57,6 +58,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**").hasRole("ADMIN")
 
                         .requestMatchers("/api/v1/orders/**").authenticated() // Khách đăng nhập mới được đặt hàng
+                        .requestMatchers("/api/v1/payments/**").authenticated()
 
                         .anyRequest().authenticated()
                 )

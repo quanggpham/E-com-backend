@@ -36,6 +36,9 @@ public class UserService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException("Email đã tồn tại");
         }
+        if (request.getPhone() != null && userRepository.existsByPhone(request.getPhone())) {
+            throw new BusinessException("Số điện thoại đã tồn tại");
+        }
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         return userMapper.toUserResponse(userRepository.save(user));
@@ -81,8 +84,21 @@ public class UserService {
     public UserResponse updateProfile(Long userId, ProfileUpdateRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
-        if (request.getUsername() != null && userRepository.existsByUsernameAndIdNot(request.getUsername(), userId)) {
+
+        String normalizedUsername = normalizeBlank(request.getUsername());
+        String normalizedPhone = normalizeBlank(request.getPhone());
+
+        request.setUsername(normalizedUsername);
+        request.setPhone(normalizedPhone);
+
+        if (normalizedUsername != null && userRepository.existsByUsernameAndIdNot(normalizedUsername, userId)) {
             throw new BusinessException("Username đã tồn tại");
+        }
+        if (request.getEmail() != null && userRepository.existsByEmailAndIdNot(request.getEmail(), userId)) {
+            throw new BusinessException("Email đã tồn tại");
+        }
+        if (normalizedPhone != null && userRepository.existsByPhoneAndIdNot(normalizedPhone, userId)) {
+            throw new BusinessException("Số điện thoại đã tồn tại");
         }
         userMapper.updateUserFromProfileRequest(request, user);
         return userMapper.toUserResponse(userRepository.save(user));
@@ -92,8 +108,14 @@ public class UserService {
     public UserResponse updateUser(Long id, UserUpdateRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
-        if (userRepository.existsByUsername(request.getUsername())) {
+        if (request.getUsername() != null && userRepository.existsByUsernameAndIdNot(request.getUsername(), id)) {
             throw new BusinessException("Username đã tồn tại");
+        }
+        if (request.getEmail() != null && userRepository.existsByEmailAndIdNot(request.getEmail(), id)) {
+            throw new BusinessException("Email đã tồn tại");
+        }
+        if (request.getPhone() != null && userRepository.existsByPhoneAndIdNot(request.getPhone(), id)) {
+            throw new BusinessException("Số điện thoại đã tồn tại");
         }
 
         userMapper.updateUserFromRequest(request, user);
@@ -106,5 +128,13 @@ public class UserService {
             throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
         userRepository.deleteById(id);
+    }
+
+    private String normalizeBlank(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

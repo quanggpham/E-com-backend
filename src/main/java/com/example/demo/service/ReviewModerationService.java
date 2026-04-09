@@ -1,7 +1,6 @@
 package com.example.demo.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.util.HtmlUtils;
 
 import java.util.Set;
 
@@ -17,7 +16,7 @@ public class ReviewModerationService {
     );
 
     public String sanitize(String content) {
-        return HtmlUtils.htmlEscape(content == null ? "" : content.trim());
+        return content == null ? "" : content.trim();
     }
 
     public boolean containsBannedKeyword(String content) {

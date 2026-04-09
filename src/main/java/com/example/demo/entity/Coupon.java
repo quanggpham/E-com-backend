@@ -1,6 +1,7 @@
 package com.example.demo.entity;
 
 import com.example.demo.enums.DiscountType;
+import com.example.demo.enums.PromotionType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
@@ -47,6 +48,19 @@ public class Coupon {
 
     @Column(name = "max_discount_amount")
     private BigDecimal maxDiscountAmount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "promotion_type", nullable = false)
+    @Builder.Default
+    private PromotionType promotionType = PromotionType.ORDER;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    private Product product;
 
     @Column(name = "min_order_value")
     private BigDecimal minOrderValue;

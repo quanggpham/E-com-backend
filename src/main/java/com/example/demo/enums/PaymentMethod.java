@@ -6,5 +6,6 @@ public enum PaymentMethod {
     CREDIT,
     VNPAY,
     MOMO,
-    SEPAY
+    SEPAY,
+    STRIPE
 }

@@ -1,9 +1,12 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.request.CouponCalculateRequest;
 import com.example.demo.dto.request.CouponRequest;
 import com.example.demo.dto.response.ApiResponse;
+import com.example.demo.dto.response.CouponCalculationResponse;
 import com.example.demo.dto.response.CouponResponse;
 import com.example.demo.dto.response.PageResponse;
+import com.example.demo.enums.PromotionType;
 import com.example.demo.security.UserPrincipal;
 import com.example.demo.service.CouponService;
 import jakarta.validation.Valid;
@@ -13,8 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/v1/coupons")
@@ -36,8 +37,13 @@ public class CouponController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<CouponResponse>>> getAllCoupons(Pageable pageable) {
-        PageResponse<CouponResponse> data = couponService.getAllCoupons(pageable);
+    public ResponseEntity<ApiResponse<PageResponse<CouponResponse>>> getAllCoupons(
+            @RequestParam(required = false) PromotionType promotionType,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long productId,
+            Pageable pageable
+    ) {
+        PageResponse<CouponResponse> data = couponService.getAllCoupons(promotionType, categoryId, productId, pageable);
         return ResponseEntity.ok(
                 ApiResponse.<PageResponse<CouponResponse>>builder()
                         .status(HttpStatus.OK.value())
@@ -82,18 +88,17 @@ public class CouponController {
         );
     }
 
-    @GetMapping("/calculate")
-    public ResponseEntity<ApiResponse<BigDecimal>> calculateDiscount(
-            @RequestParam String code,
-            @RequestParam BigDecimal amount,
+    @PostMapping("/calculate")
+    public ResponseEntity<ApiResponse<CouponCalculationResponse>> calculateDiscount(
+            @Valid @RequestBody CouponCalculateRequest request,
             @AuthenticationPrincipal UserPrincipal userPrincipal
             ) {
-        BigDecimal discountAmount = couponService.calculateDiscount(code, amount, userPrincipal.getId());
+        CouponCalculationResponse discountData = couponService.calculateDiscount(request, userPrincipal.getId());
         return ResponseEntity.ok(
-                ApiResponse.<BigDecimal>builder()
+                ApiResponse.<CouponCalculationResponse>builder()
                         .status(HttpStatus.OK.value())
                         .message("Tính toán số tiền giảm giá thành công")
-                        .data(discountAmount)
+                        .data(discountData)
                         .build()
         );
     }

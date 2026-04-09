@@ -131,7 +131,7 @@
           "phoneNumber": "0901234567",
           "shippingAddress": "123 Đường ABC, Quận 1, TP.HCM",
           "note": "Giao giờ hành chính",
-          "paymentMethod": "COD",
+          "paymentMethod": "STRIPE",
           "items": [
             { "productId": 1, "quantity": 2 },
             { "productId": 2, "quantity": 1 }
@@ -155,11 +155,63 @@
         "auth": true
       }
     },
-    "coupons": {
-      "calculate": {
-        "method": "GET",
-        "url": "/coupons/calculate?code=GIAM50K&amount=200000",
+    "payments": {
+      "stripeCheckout": {
+        "method": "POST",
+        "url": "/payments/1/stripe/checkout",
         "auth": true
+      },
+      "stripeWebhook": {
+        "method": "POST",
+        "url": "/payments/stripe/webhook",
+        "auth": false,
+        "headers": {
+          "Stripe-Signature": "t=1710000000,v1=signature"
+        }
+      }
+    },
+    "coupons": {
+      "create": {
+        "method": "POST",
+        "url": "/coupons",
+        "auth": true,
+        "body": {
+          "code": "GIAM20SP",
+          "discountType": "PERCENTAGE",
+          "discountValue": 20,
+          "maxDiscountAmount": 50000,
+          "promotionType": "PRODUCT",
+          "categoryId": null,
+          "productId": 42,
+          "minOrderValue": 100000,
+          "usageLimit": 100,
+          "startDate": "2026-04-10",
+          "expirationDate": "2026-05-01",
+          "active": true
+        }
+      },
+      "list": {
+        "method": "GET",
+        "url": "/coupons?promotionType=PRODUCT&productId=42&page=0&size=10",
+        "auth": true
+      },
+      "calculate": {
+        "method": "POST",
+        "url": "/coupons/calculate",
+        "auth": true,
+        "body": {
+          "code": "GIAM20SP",
+          "items": [
+            {
+              "productId": 42,
+              "quantity": 2
+            },
+            {
+              "productId": 9,
+              "quantity": 1
+            }
+          ]
+        }
       }
     },
     "categories": {
@@ -273,6 +325,77 @@
         "formData": {
           "file": "<binary>"
         }
+      }
+    },
+    "promotionBanners": {
+      "listActive": {
+        "method": "GET",
+        "url": "/promotion-banners",
+        "auth": false
+      },
+      "adminList": {
+        "method": "GET",
+        "url": "/admin/promotion-banners?page=0&size=10",
+        "auth": true
+      },
+      "adminCreate": {
+        "method": "POST",
+        "url": "/admin/promotion-banners",
+        "auth": true,
+        "body": {
+          "title": "Combo Gia Đình",
+          "discountLabel": "Giảm 30%",
+          "couponCode": "COMBO30",
+          "description": "Ưu đãi cho đơn hàng gia đình cuối tuần.",
+          "linkUrl": "/khuyen-mai/combo-gia-dinh",
+          "bgColor": "bg-white/15",
+          "displayOrder": 0,
+          "isActive": true,
+          "startDate": "2026-04-10T00:00:00",
+          "endDate": "2026-05-01T23:59:59"
+        }
+      },
+      "adminUpdate": {
+        "method": "PUT",
+        "url": "/admin/promotion-banners/1",
+        "auth": true,
+        "body": {
+          "title": "Freeship Cuối Tuần",
+          "discountLabel": "Freeship",
+          "couponCode": "FREESHIP",
+          "description": "Miễn phí vận chuyển cho đơn cuối tuần.",
+          "linkUrl": "/khuyen-mai/freeship",
+          "bgColor": "bg-emerald-500/20",
+          "displayOrder": 1,
+          "isActive": true,
+          "startDate": null,
+          "endDate": null
+        }
+      },
+      "adminDelete": {
+        "method": "DELETE",
+        "url": "/admin/promotion-banners/1",
+        "auth": true
+      },
+      "adminChangeStatus": {
+        "method": "PATCH",
+        "url": "/admin/promotion-banners/1/status?active=false",
+        "auth": true
+      },
+      "adminReorder": {
+        "method": "PATCH",
+        "url": "/admin/promotion-banners/reorder",
+        "auth": true,
+        "body": [
+          {
+            "id": 1,
+            "displayOrder": 0
+          },
+          {
+            "id": 2,
+            "displayOrder": 1
+          }
+        ]
       }
     }
   }

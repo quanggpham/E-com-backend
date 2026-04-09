@@ -1,6 +1,7 @@
 package com.example.demo.dto.request;
 
 import com.example.demo.enums.DiscountType;
+import com.example.demo.enums.PromotionType;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -39,6 +40,13 @@ public class CouponRequest {
     @NotNull(message = "Ngày kết thúc không được để trống")
     @Future(message = "Ngày kết thúc phải ở tương lai")
     private LocalDate expirationDate;
+
+    @NotNull(message = "Loại khuyến mãi không được để trống")
+    private PromotionType promotionType;
+
+    private Long categoryId;
+
+    private Long productId;
 
     private boolean active = true;
 }

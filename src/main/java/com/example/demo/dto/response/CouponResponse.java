@@ -1,6 +1,7 @@
 package com.example.demo.dto.response;
 
 import com.example.demo.enums.DiscountType;
+import com.example.demo.enums.PromotionType;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,6 +18,9 @@ public class CouponResponse {
     private DiscountType discountType;
     private BigDecimal discountValue;
     private BigDecimal maxDiscountAmount;
+    private PromotionType promotionType;
+    private Long categoryId;
+    private Long productId;
     private BigDecimal minOrderValue;
     private Integer usageLimit;
     private Integer usedCount;
