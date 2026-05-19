@@ -212,16 +212,7 @@ public class PaymentService {
 
         Payment payment = paymentRepository.findByTransactionReference(sessionId)
                 .orElseGet(() -> createStripePayment(orderIdValue, sessionId, payload));
-
-        payment.setStatus(PaymentStatus.COMPLETED);
-        payment.setGatewayResponseJson(payload);
-        paymentRepository.save(payment);
-
-        Order order = payment.getOrder();
-        order.setStatus(OrderStatus.CONFIRMED);
-        orderRepository.save(order);
-
-        emailService.sendOrderConfirmationEmail(order);
+        markStripePaymentCompleted(payment, payload);
     }
 
     private void handlePaymentIntentSucceeded(JsonNode root, String payload) {
@@ -242,14 +233,7 @@ public class PaymentService {
             log.warn("Khong tim thay payment STRIPE cho orderId={} khi xu ly payment_intent.succeeded", orderId);
             return;
         }
-
-        payment.setStatus(PaymentStatus.COMPLETED);
-        payment.setGatewayResponseJson(payload);
-        paymentRepository.save(payment);
-
-        Order order = payment.getOrder();
-        order.setStatus(OrderStatus.CONFIRMED);
-        orderRepository.save(order);
+        markStripePaymentCompleted(payment, payload);
     }
 
     private void handlePaymentIntentFailed(JsonNode root, String payload) {
@@ -289,6 +273,25 @@ public class PaymentService {
                 .status(PaymentStatus.PENDING)
                 .gatewayResponseJson(payload)
                 .build();
+    }
+
+    private void markStripePaymentCompleted(Payment payment, String payload) {
+        boolean shouldSendEmail = payment.getStatus() != PaymentStatus.COMPLETED
+                || payment.getOrder().getStatus() != OrderStatus.CONFIRMED;
+
+        payment.setStatus(PaymentStatus.COMPLETED);
+        payment.setGatewayResponseJson(payload);
+        paymentRepository.save(payment);
+
+        Order order = payment.getOrder();
+        order.setStatus(OrderStatus.CONFIRMED);
+        orderRepository.save(order);
+
+        if (shouldSendEmail) {
+            Order emailReadyOrder = orderRepository.findByIdWithEmailDetails(order.getId())
+                    .orElse(order);
+            emailService.sendOrderConfirmationEmail(emailReadyOrder);
+        }
     }
 
     private Long toStripeAmount(BigDecimal amount) {

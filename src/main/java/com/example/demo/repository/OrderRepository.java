@@ -8,6 +8,7 @@ import com.example.demo.enums.OrderStatus;
 import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,6 +22,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Page<Order> findAllByUserId(Long userId, Pageable pageable);
     Page<Order> findAllByUserIdAndStatus(Long userId, OrderStatus status, Pageable pageable);
     Page<Order> findAllByStatus(OrderStatus status, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user", "orderDetails", "orderDetails.product"})
+    @Query("SELECT o FROM Order o WHERE o.id = :orderId")
+    java.util.Optional<Order> findByIdWithEmailDetails(@Param("orderId") Long orderId);
+
+    boolean existsByUserIdAndCreatedAtAfter(Long userId, LocalDateTime createdAt);
 
     @Query("SELECT new com.example.demo.dto.response.OverviewStatisticResponse(" +
             "COUNT(o.id), " +
