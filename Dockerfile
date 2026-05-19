@@ -1,17 +1,24 @@
-FROM eclipse-temurin:21-jdk-alpine
 
-# Tạo thư mục làm việc
+FROM maven:3.9.6-eclipse-temurin-21 AS build
+
+
 WORKDIR /app
 
-# Copy file pom.xml và source code
+
 COPY pom.xml .
 COPY src ./src
 
-# Build ứng dụng (Bỏ qua test để nhanh hơn)
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
 
-# Expose port 8080 (hoặc port bạn config trong application.properties)
+
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+
+
+COPY --from=build /app/target/*.jar app.jar
+
+
 EXPOSE 8080
 
-# Chạy ứng dụng
-ENTRYPOINT ["java", "-jar", "target/*.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
