@@ -49,13 +49,13 @@ public class PaymentService {
     @Value("${sepay.secret-key}")
     private String secretKey;
 
-    @Value("${stripe.secret-key}")
+    @Value("${stripe.secret-key:}")
     private String stripeSecretKey;
 
-    @Value("${stripe.publishable-key}")
+    @Value("${stripe.publishable-key:}")
     private String stripePublishableKey;
 
-    @Value("${stripe.webhook-secret}")
+    @Value("${stripe.webhook-secret:}")
     private String stripeWebhookSecret;
 
     @Value("${stripe.success-url}")
