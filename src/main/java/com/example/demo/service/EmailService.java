@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.entity.Cart;
 import com.example.demo.entity.Order;
+import com.example.demo.entity.User;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +24,17 @@ public class EmailService {
     @Async
     public void sendOrderConfirmationEmail(Order order) {
         try {
+            String recipientEmail = getUserEmail(order.getUser());
+            if (recipientEmail == null || recipientEmail.isBlank()) {
+                log.warn("Skip order confirmation email because user email is empty for orderId={}", order.getId());
+                return;
+            }
+
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
             helper.setFrom("phamquangdung188@gmail.com");
-            helper.setTo("ptyn.18904111@gmail.com");
+            helper.setTo(recipientEmail);
             helper.setSubject("Order Confirmation");
 
             Context context = new Context();
@@ -36,7 +43,7 @@ public class EmailService {
             String htmlContent = templateEngine.process("email/order-confirmation", context);
             helper.setText(htmlContent, true);
             mailSender.send(mimeMessage);
-            log.info("Order confirmation email sent");
+            log.info("Order confirmation email sent to {} for orderId={}", recipientEmail, order.getId());
         } catch (Exception e) {
             log.error("Loi khi gui email order confirmation: {}", e.getMessage());
         }
@@ -45,11 +52,17 @@ public class EmailService {
     @Async
     public void sendAbandonedCartEmail(Cart cart, String cartUrl) {
         try {
+            String recipientEmail = getUserEmail(cart.getUser());
+            if (recipientEmail == null || recipientEmail.isBlank()) {
+                log.warn("Skip abandoned cart reminder email because user email is empty for cartId={}", cart.getId());
+                return;
+            }
+
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
             helper.setFrom("phamquangdung188@gmail.com");
-            helper.setTo("ptyn.18904111@gmail.com");
+            helper.setTo(recipientEmail);
             helper.setSubject("Ban van con mon ngon trong gio hang");
 
             Context context = new Context();
@@ -64,7 +77,7 @@ public class EmailService {
             String htmlContent = templateEngine.process("email/abandoned-cart-reminder", context);
             helper.setText(htmlContent, true);
             mailSender.send(mimeMessage);
-            log.info("Abandoned cart reminder email sent for cartId={}", cart.getId());
+            log.info("Abandoned cart reminder email sent to {} for cartId={}", recipientEmail, cart.getId());
         } catch (Exception e) {
             log.error("Loi khi gui email nhac gio hang cartId={}: {}", cart.getId(), e.getMessage());
         }
@@ -91,5 +104,9 @@ public class EmailService {
         } catch (Exception e) {
             log.error("Loi khi gui email tu choi review: {}", e.getMessage());
         }
+    }
+
+    private String getUserEmail(User user) {
+        return user == null ? null : user.getEmail();
     }
 }
