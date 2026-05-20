@@ -6,13 +6,22 @@ import com.example.demo.entity.User;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.springframework.beans.factory.annotation.Value;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +39,9 @@ public class EmailService {
 
     @Value("${resend.from:}")
     private String resendFrom;
+
+    @Value("${resend.test-recipient:}")
+    private String resendTestRecipient;
 
     @Async
     public void sendOrderConfirmationEmail(Order order) {
@@ -106,27 +118,38 @@ public class EmailService {
 
     private void sendEmail(String recipient, String subject, String content, boolean isHtml) {
         if (resendApiKey != null && !resendApiKey.isBlank()) {
-            try {
-                org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
-                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-                headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-                headers.setBearerAuth(resendApiKey);
-
-                java.util.Map<String, Object> body = new java.util.HashMap<>();
-                body.put("from", resendFrom != null && !resendFrom.isBlank() ? resendFrom : "onboarding@resend.dev");
-                body.put("to", java.util.List.of(recipient));
-                body.put("subject", subject);
-                body.put(isHtml ? "html" : "text", content);
-
-                org.springframework.http.HttpEntity<java.util.Map<String, Object>> entity = new org.springframework.http.HttpEntity<>(body, headers);
-                restTemplate.postForEntity("https://api.resend.com/emails", entity, String.class);
-                log.info("Email sent via Resend API successfully to {}", recipient);
-            } catch (Exception e) {
-                log.error("Failed to send email via Resend API to {}: {}. Falling back to SMTP...", recipient, e.getMessage());
-                sendEmailViaSmtp(recipient, subject, content, isHtml);
+            if (resendFrom == null || resendFrom.isBlank()) {
+                log.error("Cannot send email via Resend to {} because RESEND_FROM/resend.from is empty", recipient);
+                return;
             }
+
+            sendEmailViaResend(recipient, subject, content, isHtml);
+            return;
         } else {
             sendEmailViaSmtp(recipient, subject, content, isHtml);
+        }
+    }
+
+    private void sendEmailViaResend(String recipient, String subject, String content, boolean isHtml) {
+        try {
+            String resendRecipient = resolveResendRecipient(recipient);
+
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(resendApiKey);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("from", resendFrom);
+            body.put("to", List.of(resendRecipient));
+            body.put("subject", subject);
+            body.put(isHtml ? "html" : "text", content);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            ResponseEntity<String> response = restTemplate.postForEntity("https://api.resend.com/emails", entity, String.class);
+            log.info("Email sent via Resend API successfully to {} with status {}", resendRecipient, response.getStatusCode());
+        } catch (Exception e) {
+            log.error("Failed to send email via Resend API to {}", recipient, e);
         }
     }
 
@@ -147,5 +170,13 @@ public class EmailService {
 
     private String getUserEmail(User user) {
         return user == null ? null : user.getEmail();
+    }
+
+    private String resolveResendRecipient(String recipient) {
+        if (resendTestRecipient != null && !resendTestRecipient.isBlank()) {
+            log.warn("Resend test recipient is enabled. Original recipient {} is overridden to {}", recipient, resendTestRecipient);
+            return resendTestRecipient;
+        }
+        return recipient;
     }
 }
