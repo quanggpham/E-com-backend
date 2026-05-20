@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.response.ApiResponse;
+import com.example.demo.dto.response.SepayCheckoutResponse;
 import com.example.demo.dto.response.StripeCheckoutResponse;
 import com.example.demo.security.UserPrincipal;
 import com.example.demo.service.PaymentService;
@@ -19,13 +20,13 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping("/{id}/checkout")
-    public ResponseEntity<ApiResponse<?>> sepayCheckout(
+    public ResponseEntity<ApiResponse<SepayCheckoutResponse>> sepayCheckout(
             @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal userPrincipal) throws Exception {
         return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.builder()
+                ApiResponse.<SepayCheckoutResponse>builder()
                         .data(paymentService.preparePayment(id, userPrincipal.getId()))
-                        .message("...")
+                        .message("Tạo thông tin thanh toán SePay thành công")
                         .status(HttpStatus.CREATED.value())
                         .build()
         );

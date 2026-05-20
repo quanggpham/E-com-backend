@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.dto.request.SePayCheckoutRequest;
+import com.example.demo.dto.response.SepayCheckoutResponse;
 import com.example.demo.dto.response.StripeCheckoutResponse;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.Payment;
@@ -12,7 +12,6 @@ import com.example.demo.exception.AccessDeniedException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.PaymentRepository;
-import com.example.demo.utils.SePayUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stripe.Stripe;
@@ -30,8 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -56,6 +55,18 @@ public class PaymentService {
     @Value("${sepay.webhook-api-key:}")
     private String sepayWebhookApiKey;
 
+    @Value("${sepay.bank-name:}")
+    private String sepayBankName;
+
+    @Value("${sepay.bank-bin:}")
+    private String sepayBankBin;
+
+    @Value("${sepay.bank-account:}")
+    private String sepayBankAccount;
+
+    @Value("${sepay.account-name:}")
+    private String sepayAccountName;
+
     @Value("${stripe.secret-key:}")
     private String stripeSecretKey;
 
@@ -71,7 +82,7 @@ public class PaymentService {
     @Value("${stripe.cancel-url}")
     private String stripeCancelUrl;
 
-    public SePayCheckoutRequest preparePayment(Long orderId, Long userId) throws Exception {
+    public SepayCheckoutResponse preparePayment(Long orderId, Long userId) throws Exception {
         Order order = findOwnedOrder(orderId, userId);
         if (order.getPaymentMethod() != PaymentMethod.SEPAY && order.getPaymentMethod() != PaymentMethod.BANK_TRANSFER) {
             throw new BusinessException("Đơn hàng này không sử dụng phương thức thanh toán chuyển khoản");
@@ -81,21 +92,6 @@ public class PaymentService {
                 .setScale(0, RoundingMode.HALF_UP)
                 .toPlainString();
         String paymentCode = buildSePayOrderCode(order.getId());
-
-        Map<String, String> fields = new LinkedHashMap<>();
-        fields.put("merchant", merchantId);
-        fields.put("operation", "PURCHASE");
-        fields.put("payment_method", "BANK_TRANSFER");
-        fields.put("order_amount", finalAmount);
-        fields.put("currency", "VND");
-        fields.put("order_invoice_number", paymentCode);
-        fields.put("order_description", paymentCode);
-        fields.put("success_url", "https://your-domain.com/payment/success");
-        fields.put("customer_id", "CUST_" + userId);
-        fields.put("error_url", "https://your-domain.com/payment/error");
-        fields.put("cancel_url", "https://your-domain.com/payment/cancel");
-
-        String signature = SePayUtils.makeSignature(fields, secretKey);
 
         Payment payment = paymentRepository.findByOrderIdAndPaymentMethod(orderId, PaymentMethod.SEPAY)
                 .orElseGet(() -> Payment.builder()
@@ -109,19 +105,14 @@ public class PaymentService {
         payment.setNote(paymentCode);
         paymentRepository.save(payment);
 
-        return SePayCheckoutRequest.builder()
-                .merchant(fields.get("merchant"))
-                .operation(fields.get("operation"))
-                .payment_method(fields.get("payment_method"))
-                .order_amount(fields.get("order_amount"))
-                .currency(fields.get("currency"))
-                .order_invoice_number(fields.get("order_invoice_number"))
-                .order_description(fields.get("order_description"))
-                .success_url(fields.get("success_url"))
-                .error_url(fields.get("error_url"))
-                .customer_id(fields.get("customer_id"))
-                .cancel_url(fields.get("cancel_url"))
-                .signature(signature)
+        return SepayCheckoutResponse.builder()
+                .bankName(sepayBankName)
+                .bankAccount(sepayBankAccount)
+                .accountName(sepayAccountName)
+                .amount(order.getTotalMoney().setScale(0, RoundingMode.HALF_UP))
+                .content(paymentCode)
+                .qrUrl(buildVietQrUrl(paymentCode, finalAmount))
+                .orderId(order.getId())
                 .build();
     }
 
@@ -457,6 +448,29 @@ public class PaymentService {
 
     private String buildSePayOrderCode(Long orderId) {
         return "DH" + orderId;
+    }
+
+    private String buildVietQrUrl(String paymentCode, String amount) {
+        if (sepayBankBin == null || sepayBankBin.isBlank()
+                || sepayBankAccount == null || sepayBankAccount.isBlank()) {
+            return "";
+        }
+
+        String encodedContent = URLEncoder.encode(paymentCode, StandardCharsets.UTF_8);
+        String encodedAccountName = URLEncoder.encode(
+                sepayAccountName == null ? "" : sepayAccountName,
+                StandardCharsets.UTF_8
+        );
+        return "https://img.vietqr.io/image/"
+                + sepayBankBin.trim()
+                + "-"
+                + sepayBankAccount.trim()
+                + "-compact2.png?amount="
+                + amount
+                + "&addInfo="
+                + encodedContent
+                + "&accountName="
+                + encodedAccountName;
     }
 
     private String firstNonBlank(String... values) {
