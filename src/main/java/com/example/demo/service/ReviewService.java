@@ -48,7 +48,7 @@ public class ReviewService {
     private final ProductReviewStatsService productReviewStatsService;
     private final EmailService emailService;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ProductReviewListResponse getProductReviews(Long productId, Integer rating, Pageable pageable) {
         if (!productRepository.existsById(productId)) {
             throw new ResourceNotFoundException("Product", "id", productId);

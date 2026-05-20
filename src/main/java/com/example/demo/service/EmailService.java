@@ -12,6 +12,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +21,9 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
+
+    @Value("${spring.mail.username}")
+    private String fromEmail;
 
     @Async
     public void sendOrderConfirmationEmail(Order order) {
@@ -33,7 +37,7 @@ public class EmailService {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
-            helper.setFrom("phamquangdung188@gmail.com");
+            helper.setFrom(fromEmail);
             helper.setTo(recipientEmail);
             helper.setSubject("Order Confirmation");
 
@@ -61,7 +65,7 @@ public class EmailService {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
-            helper.setFrom("phamquangdung188@gmail.com");
+            helper.setFrom(fromEmail);
             helper.setTo(recipientEmail);
             helper.setSubject("Ban van con mon ngon trong gio hang");
 
@@ -89,7 +93,7 @@ public class EmailService {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
 
-            helper.setFrom("phamquangdung188@gmail.com");
+            helper.setFrom(fromEmail);
             helper.setTo(email);
             helper.setSubject("Review moderation update");
             helper.setText("""

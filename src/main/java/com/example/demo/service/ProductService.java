@@ -21,6 +21,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.demo.entity.ProductStats;
+import com.example.demo.repository.ProductStatsRepository;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import java.util.List;
 
@@ -31,6 +35,7 @@ public class ProductService {
     private final ProductMapper productMapper;
     private final CategoryRepository categoryRepository;
     private final ProductLikeRepository productLikeRepository;
+    private final ProductStatsRepository productStatsRepository;
 
     @Transactional
     public ProductResponse create(@Valid ProductCreationRequest request) {
@@ -67,6 +72,7 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
         ProductResponse response = productMapper.toResponse(product);
         enrichWithLikeInfo(response, product, userId);
+        enrichWithStatsInfo(response, product);
         return response;
     }
 
@@ -89,6 +95,7 @@ public class ProductService {
                 .map(product -> {
                     ProductResponse productResponse = productMapper.toResponse(product);
                     enrichWithLikeInfo(productResponse, product, userId);
+                    enrichWithStatsInfo(productResponse, product);
                     return productResponse;
                 })
                 .toList();
@@ -105,5 +112,16 @@ public class ProductService {
     private void enrichWithLikeInfo(ProductResponse response, Product product, Long userId) {
         response.setLikeCount(productLikeRepository.countByProductId(product.getId()));
         response.setLiked(userId != null && productLikeRepository.existsByUserIdAndProductId(userId, product.getId()));
+    }
+
+    private void enrichWithStatsInfo(ProductResponse response, Product product) {
+        ProductStats stats = productStatsRepository.findById(product.getId()).orElse(null);
+        if (stats != null) {
+            response.setAvgRating(stats.getAvgRating());
+            response.setTotalReviews(stats.getTotalReviews());
+        } else {
+            response.setAvgRating(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+            response.setTotalReviews(0L);
+        }
     }
 }

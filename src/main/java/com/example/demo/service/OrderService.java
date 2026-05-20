@@ -105,7 +105,9 @@ public class OrderService {
         cartItemRepository.deleteByUserIdAndProductIdIn(user.getId(), productIds);
 
         if (request.getPaymentMethod() != PaymentMethod.STRIPE) {
-            emailService.sendOrderConfirmationEmail(savedOrder);
+            Order emailReadyOrder = orderRepository.findByIdWithEmailDetails(savedOrder.getId())
+                    .orElse(savedOrder);
+            emailService.sendOrderConfirmationEmail(emailReadyOrder);
         }
 
         return orderMapper.toOrderResponse(savedOrder);

@@ -29,7 +29,7 @@ public class ProductReviewStatsService {
     private final ProductRepository productRepository;
     private final ReviewRepository reviewRepository;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ProductReviewStatsResponse getStats(Long productId) {
         long approvedReviews = reviewRepository.countByProductIdAndStatus(productId, ReviewStatus.APPROVED);
         ProductStats stats = productStatsRepository.findById(productId).orElse(null);

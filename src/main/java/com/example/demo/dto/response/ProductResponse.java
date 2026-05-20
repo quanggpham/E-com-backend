@@ -20,4 +20,6 @@ public class ProductResponse {
     private LocalDateTime createdAt;
     private Long likeCount;
     private Boolean liked;
+    private BigDecimal avgRating;
+    private Long totalReviews;
 }
