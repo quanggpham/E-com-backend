@@ -36,7 +36,7 @@ public class RatingDistributionConverter implements AttributeConverter<Map<Strin
         try {
             return OBJECT_MAPPER.readValue(dbData, MAP_TYPE);
         } catch (IOException e) {
-            throw new BusinessException("Khong the doc phan bo danh gia");
+            return defaultDistribution();
         }
     }
 

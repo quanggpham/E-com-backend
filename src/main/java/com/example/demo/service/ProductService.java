@@ -115,13 +115,17 @@ public class ProductService {
     }
 
     private void enrichWithStatsInfo(ProductResponse response, Product product) {
-        ProductStats stats = productStatsRepository.findById(product.getId()).orElse(null);
-        if (stats != null) {
-            response.setAvgRating(stats.getAvgRating());
-            response.setTotalReviews(stats.getTotalReviews());
-        } else {
-            response.setAvgRating(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-            response.setTotalReviews(0L);
+        try {
+            ProductStats stats = productStatsRepository.findById(product.getId()).orElse(null);
+            if (stats != null) {
+                response.setAvgRating(stats.getAvgRating());
+                response.setTotalReviews(stats.getTotalReviews());
+                return;
+            }
+        } catch (Exception e) {
+            // Fallback to defaults if stats data is corrupted
         }
+        response.setAvgRating(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+        response.setTotalReviews(0L);
     }
 }
