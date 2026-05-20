@@ -25,6 +25,12 @@ public class EmailService {
     @Value("${spring.mail.username:}")
     private String fromEmail;
 
+    @Value("${resend.api-key:}")
+    private String resendApiKey;
+
+    @Value("${resend.from:}")
+    private String resendFrom;
+
     @Async
     public void sendOrderConfirmationEmail(Order order) {
         try {
@@ -34,20 +40,11 @@ public class EmailService {
                 return;
             }
 
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-
-            helper.setFrom(fromEmail);
-            helper.setTo(recipientEmail);
-            helper.setSubject("Order Confirmation");
-
             Context context = new Context();
             context.setVariable("order", order);
 
             String htmlContent = templateEngine.process("email/order-confirmation", context);
-            helper.setText(htmlContent, true);
-            mailSender.send(mimeMessage);
-            log.info("Order confirmation email sent to {} for orderId={}", recipientEmail, order.getId());
+            sendEmail(recipientEmail, "Order Confirmation", htmlContent, true);
         } catch (Exception e) {
             log.error("Loi khi gui email order confirmation: {}", e.getMessage());
         }
@@ -62,13 +59,6 @@ public class EmailService {
                 return;
             }
 
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-
-            helper.setFrom(fromEmail);
-            helper.setTo(recipientEmail);
-            helper.setSubject("Ban van con mon ngon trong gio hang");
-
             Context context = new Context();
             context.setVariable("cart", cart);
             context.setVariable("user", cart.getUser());
@@ -79,9 +69,7 @@ public class EmailService {
                     .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add));
 
             String htmlContent = templateEngine.process("email/abandoned-cart-reminder", context);
-            helper.setText(htmlContent, true);
-            mailSender.send(mimeMessage);
-            log.info("Abandoned cart reminder email sent to {} for cartId={}", recipientEmail, cart.getId());
+            sendEmail(recipientEmail, "Ban van con mon ngon trong gio hang", htmlContent, true);
         } catch (Exception e) {
             log.error("Loi khi gui email nhac gio hang cartId={}: {}", cart.getId(), e.getMessage());
         }
@@ -90,21 +78,14 @@ public class EmailService {
     @Async
     public void sendReviewRejectedEmail(String email, String productName, String rejectionReason) {
         try {
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
-
-            helper.setFrom(fromEmail);
-            helper.setTo(email);
-            helper.setSubject("Review moderation update");
-            helper.setText("""
+            String content = """
                     Review cua ban cho san pham "%s" da bi tu choi.
                     Ly do: %s
                     """.formatted(
                     productName,
                     rejectionReason == null ? "Khong duoc cung cap" : rejectionReason
-            ));
-            mailSender.send(mimeMessage);
-            log.info("Review rejection email sent");
+            );
+            sendEmail(email, "Review moderation update", content, false);
         } catch (Exception e) {
             log.error("Loi khi gui email tu choi review: {}", e.getMessage());
         }
@@ -113,22 +94,54 @@ public class EmailService {
     @Async
     public void sendPasswordResetEmail(String email, String code) {
         try {
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-
-            helper.setFrom(fromEmail);
-            helper.setTo(email);
-            helper.setSubject("[Bếp Việt] Khôi phục mật khẩu tài khoản");
-
             Context context = new Context();
             context.setVariable("code", code);
 
             String htmlContent = templateEngine.process("email/password-reset", context);
-            helper.setText(htmlContent, true);
-            mailSender.send(mimeMessage);
-            log.info("Password reset email sent to {}", email);
+            sendEmail(email, "[Bếp Việt] Khôi phục mật khẩu tài khoản", htmlContent, true);
         } catch (Exception e) {
             log.error("Loi khi gui email khoi phuc mat khau den {}: {}", email, e.getMessage());
+        }
+    }
+
+    private void sendEmail(String recipient, String subject, String content, boolean isHtml) {
+        if (resendApiKey != null && !resendApiKey.isBlank()) {
+            try {
+                org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+                headers.setBearerAuth(resendApiKey);
+
+                java.util.Map<String, Object> body = new java.util.HashMap<>();
+                body.put("from", resendFrom != null && !resendFrom.isBlank() ? resendFrom : "onboarding@resend.dev");
+                body.put("to", java.util.List.of(recipient));
+                body.put("subject", subject);
+                body.put(isHtml ? "html" : "text", content);
+
+                org.springframework.http.HttpEntity<java.util.Map<String, Object>> entity = new org.springframework.http.HttpEntity<>(body, headers);
+                restTemplate.postForEntity("https://api.resend.com/emails", entity, String.class);
+                log.info("Email sent via Resend API successfully to {}", recipient);
+            } catch (Exception e) {
+                log.error("Failed to send email via Resend API to {}: {}. Falling back to SMTP...", recipient, e.getMessage());
+                sendEmailViaSmtp(recipient, subject, content, isHtml);
+            }
+        } else {
+            sendEmailViaSmtp(recipient, subject, content, isHtml);
+        }
+    }
+
+    private void sendEmailViaSmtp(String recipient, String subject, String content, boolean isHtml) {
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, isHtml, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(recipient);
+            helper.setSubject(subject);
+            helper.setText(content, isHtml);
+            mailSender.send(mimeMessage);
+            log.info("Email sent via SMTP successfully to {}", recipient);
+        } catch (Exception e) {
+            log.error("Failed to send email via SMTP to {}: {}", recipient, e.getMessage());
         }
     }
 
