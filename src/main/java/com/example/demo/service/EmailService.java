@@ -110,6 +110,28 @@ public class EmailService {
         }
     }
 
+    @Async
+    public void sendPasswordResetEmail(String email, String code) {
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(email);
+            helper.setSubject("[Bếp Việt] Khôi phục mật khẩu tài khoản");
+
+            Context context = new Context();
+            context.setVariable("code", code);
+
+            String htmlContent = templateEngine.process("email/password-reset", context);
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+            log.info("Password reset email sent to {}", email);
+        } catch (Exception e) {
+            log.error("Loi khi gui email khoi phuc mat khau den {}: {}", email, e.getMessage());
+        }
+    }
+
     private String getUserEmail(User user) {
         return user == null ? null : user.getEmail();
     }

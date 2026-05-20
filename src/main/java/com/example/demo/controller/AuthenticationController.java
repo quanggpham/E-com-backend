@@ -2,6 +2,8 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.request.AuthenticationRequest;
 import com.example.demo.dto.request.RegisterRequest;
+import com.example.demo.dto.request.ForgotPasswordRequest;
+import com.example.demo.dto.request.ResetPasswordRequest;
 import com.example.demo.dto.response.ApiResponse;
 import com.example.demo.dto.response.AuthenticationResponse;
 import com.example.demo.service.AuthenticationService;
@@ -42,6 +44,32 @@ public class AuthenticationController {
                         .status(HttpStatus.OK.value())
                         .message("Đăng nhập thành công")
                         .data(authenticationService.authenticate(request))
+                        .build()
+        );
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request
+    ) {
+        authenticationService.forgotPassword(request);
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Mã xác minh đã được gửi về email của bạn")
+                        .build()
+        );
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request
+    ) {
+        authenticationService.resetPassword(request);
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Khôi phục mật khẩu thành công")
                         .build()
         );
     }
