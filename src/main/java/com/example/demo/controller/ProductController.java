@@ -12,6 +12,7 @@ import com.example.demo.service.ProductLikeService.ProductLikeSummary;
 import com.example.demo.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -116,7 +117,7 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> search(
             ProductSearchRequest request,
-            Pageable pageable,
+            @PageableDefault(page = 0, size = 10) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal currentUser
     ) {
         return ResponseEntity.status(HttpStatus.OK)

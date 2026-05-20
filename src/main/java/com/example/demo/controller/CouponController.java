@@ -12,6 +12,7 @@ import com.example.demo.service.CouponService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -41,7 +42,7 @@ public class CouponController {
             @RequestParam(required = false) PromotionType promotionType,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long productId,
-            Pageable pageable
+            @PageableDefault(page = 0, size = 10) Pageable pageable
     ) {
         PageResponse<CouponResponse> data = couponService.getAllCoupons(promotionType, categoryId, productId, pageable);
         return ResponseEntity.ok(

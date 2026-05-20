@@ -12,7 +12,7 @@ public class ProductSearchRequest {
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
     private Long categoryId;
-    private int page = 1; // Giá trị mặc định
+    private int page = 0; // Giá trị mặc định
     private int size = 10;
     private String sortBy = "id";
     private String sortDirection = "asc";
