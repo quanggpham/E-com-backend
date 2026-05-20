@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
@@ -54,5 +56,14 @@ public class PaymentController {
                         .message("Đã xử lý webhook Stripe")
                         .build()
         );
+    }
+
+    @PostMapping("/sepay/webhook")
+    public ResponseEntity<Map<String, Boolean>> sepayWebhook(
+            @RequestBody String payload,
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        paymentService.handleSePayWebhook(payload, authorization);
+        return ResponseEntity.ok(Map.of("success", true));
     }
 }

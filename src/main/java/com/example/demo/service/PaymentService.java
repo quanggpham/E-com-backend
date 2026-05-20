@@ -32,11 +32,15 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentService {
+
+    private static final Pattern SEPAY_ORDER_CODE_PATTERN = Pattern.compile("(?i)DH(\\d{1,10})");
 
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
@@ -48,6 +52,9 @@ public class PaymentService {
 
     @Value("${sepay.secret-key}")
     private String secretKey;
+
+    @Value("${sepay.webhook-api-key:}")
+    private String sepayWebhookApiKey;
 
     @Value("${stripe.secret-key:}")
     private String stripeSecretKey;
@@ -66,9 +73,14 @@ public class PaymentService {
 
     public SePayCheckoutRequest preparePayment(Long orderId, Long userId) throws Exception {
         Order order = findOwnedOrder(orderId, userId);
+        if (order.getPaymentMethod() != PaymentMethod.SEPAY && order.getPaymentMethod() != PaymentMethod.BANK_TRANSFER) {
+            throw new BusinessException("Đơn hàng này không sử dụng phương thức thanh toán chuyển khoản");
+        }
+
         String finalAmount = order.getTotalMoney()
                 .setScale(0, RoundingMode.HALF_UP)
                 .toPlainString();
+        String paymentCode = buildSePayOrderCode(order.getId());
 
         Map<String, String> fields = new LinkedHashMap<>();
         fields.put("merchant", merchantId);
@@ -76,14 +88,26 @@ public class PaymentService {
         fields.put("payment_method", "BANK_TRANSFER");
         fields.put("order_amount", finalAmount);
         fields.put("currency", "VND");
-        fields.put("order_invoice_number", "INV-" + order.getId());
-        fields.put("order_description", "Thanh toan don hang #" + order.getId());
+        fields.put("order_invoice_number", paymentCode);
+        fields.put("order_description", paymentCode);
         fields.put("success_url", "https://your-domain.com/payment/success");
-        fields.put("customer_id", "CUST_005");
+        fields.put("customer_id", "CUST_" + userId);
         fields.put("error_url", "https://your-domain.com/payment/error");
         fields.put("cancel_url", "https://your-domain.com/payment/cancel");
 
         String signature = SePayUtils.makeSignature(fields, secretKey);
+
+        Payment payment = paymentRepository.findByOrderIdAndPaymentMethod(orderId, PaymentMethod.SEPAY)
+                .orElseGet(() -> Payment.builder()
+                        .order(order)
+                        .paymentMethod(PaymentMethod.SEPAY)
+                        .amount(order.getTotalMoney())
+                        .status(PaymentStatus.PENDING)
+                        .build());
+        payment.setAmount(order.getTotalMoney());
+        payment.setStatus(PaymentStatus.PENDING);
+        payment.setNote(paymentCode);
+        paymentRepository.save(payment);
 
         return SePayCheckoutRequest.builder()
                 .merchant(fields.get("merchant"))
@@ -99,6 +123,72 @@ public class PaymentService {
                 .cancel_url(fields.get("cancel_url"))
                 .signature(signature)
                 .build();
+    }
+
+    @Transactional
+    public void handleSePayWebhook(String payload, String authorizationHeader) {
+        verifySePayAuthorization(authorizationHeader);
+
+        JsonNode root = parseWebhookPayload(payload);
+        String transferType = readText(root, "transferType");
+        if (!"in".equalsIgnoreCase(transferType)) {
+            log.info("Bo qua SePay webhook transferType={}", transferType);
+            return;
+        }
+
+        String transactionReference = readSePayTransactionReference(root);
+        if (transactionReference != null
+                && paymentRepository.findByTransactionReference(transactionReference).isPresent()) {
+            log.info("Bo qua SePay webhook trung giao dich: {}", transactionReference);
+            return;
+        }
+
+        String paymentCodeSource = firstNonBlank(
+                readText(root, "code"),
+                readText(root, "content"),
+                readText(root, "description")
+        );
+        Long orderId = extractOrderIdFromSePayCode(paymentCodeSource);
+        BigDecimal transferAmount = readAmount(root, "transferAmount");
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+        if (order.getPaymentMethod() != PaymentMethod.SEPAY && order.getPaymentMethod() != PaymentMethod.BANK_TRANSFER) {
+            throw new BusinessException("Đơn hàng không sử dụng phương thức thanh toán SePay");
+        }
+        if (transferAmount.compareTo(order.getTotalMoney().setScale(0, RoundingMode.HALF_UP)) != 0) {
+            throw new BusinessException("Số tiền chuyển khoản không khớp đơn hàng");
+        }
+
+        Payment payment = paymentRepository.findByOrderIdAndPaymentMethod(orderId, PaymentMethod.SEPAY)
+                .orElseGet(() -> Payment.builder()
+                        .order(order)
+                        .paymentMethod(PaymentMethod.SEPAY)
+                        .amount(order.getTotalMoney())
+                        .status(PaymentStatus.PENDING)
+                        .build());
+
+        boolean shouldSendEmail = payment.getStatus() != PaymentStatus.COMPLETED
+                || order.getStatus() != OrderStatus.CONFIRMED;
+
+        payment.setTransactionReference(transactionReference);
+        payment.setAmount(transferAmount);
+        payment.setStatus(PaymentStatus.COMPLETED);
+        payment.setGatewayResponseJson(payload);
+        payment.setNote(buildSePayOrderCode(order.getId()));
+        paymentRepository.save(payment);
+
+        order.setStatus(OrderStatus.CONFIRMED);
+        orderRepository.save(order);
+
+        if (shouldSendEmail) {
+            Order emailReadyOrder = orderRepository.findByIdWithEmailDetails(order.getId())
+                    .orElse(order);
+            emailService.sendOrderConfirmationEmail(emailReadyOrder);
+        }
+
+        log.info("Da xu ly SePay webhook thanh cong: orderId={}, amount={}, reference={}",
+                orderId, transferAmount, transactionReference);
     }
 
     @Transactional
@@ -325,6 +415,57 @@ public class PaymentService {
         } catch (Exception ex) {
             throw new BusinessException("Không thể parse payload webhook Stripe");
         }
+    }
+
+    private void verifySePayAuthorization(String authorizationHeader) {
+        if (sepayWebhookApiKey == null || sepayWebhookApiKey.isBlank()) {
+            throw new BusinessException("SePay webhook API key chưa được cấu hình");
+        }
+        String expectedHeader = "Apikey " + sepayWebhookApiKey;
+        if (authorizationHeader == null || !expectedHeader.equals(authorizationHeader)) {
+            throw new BusinessException("SePay webhook API key không hợp lệ");
+        }
+    }
+
+    private Long extractOrderIdFromSePayCode(String value) {
+        if (value == null) {
+            throw new BusinessException("Webhook SePay thiếu mã thanh toán DH");
+        }
+        Matcher matcher = SEPAY_ORDER_CODE_PATTERN.matcher(value);
+        if (!matcher.find()) {
+            throw new BusinessException("Không tìm thấy mã thanh toán DH trong webhook SePay");
+        }
+        return Long.valueOf(matcher.group(1));
+    }
+
+    private BigDecimal readAmount(JsonNode root, String fieldName) {
+        JsonNode valueNode = root.path(fieldName);
+        if (valueNode.isMissingNode() || valueNode.isNull()) {
+            throw new BusinessException("Webhook SePay thiếu số tiền chuyển khoản");
+        }
+        return new BigDecimal(valueNode.asText()).setScale(0, RoundingMode.HALF_UP);
+    }
+
+    private String readSePayTransactionReference(JsonNode root) {
+        String id = readText(root, "id");
+        if (id != null) {
+            return "sepay:" + id;
+        }
+        String referenceCode = readText(root, "referenceCode");
+        return referenceCode != null ? "sepay:" + referenceCode : null;
+    }
+
+    private String buildSePayOrderCode(Long orderId) {
+        return "DH" + orderId;
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private String readText(JsonNode node, String fieldName) {
