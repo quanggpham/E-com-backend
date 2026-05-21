@@ -85,10 +85,16 @@ public class ProductService {
                 pageable.getSort()
         );
 
-        Specification<Product> spec = Specification
-                .allOf(ProductSpecification.hasCategory(request.getCategoryId())
-                        .and(ProductSpecification.hasName(request.getName())
-                                .and(ProductSpecification.hasPrice(request.getMinPrice(), request.getMaxPrice()))));
+        Specification<Product> spec = Specification.where(null);
+        if (request.getCategoryId() != null) {
+            spec = spec.and(ProductSpecification.hasCategory(request.getCategoryId()));
+        }
+        if (request.getName() != null && !request.getName().trim().isEmpty()) {
+            spec = spec.and(ProductSpecification.hasName(request.getName().trim()));
+        }
+        if (request.getMinPrice() != null || request.getMaxPrice() != null) {
+            spec = spec.and(ProductSpecification.hasPrice(request.getMinPrice(), request.getMaxPrice()));
+        }
 
         Page<Product> pageData = productRepository.findAll(spec, finalPageable);
         List<ProductResponse> response = pageData.getContent().stream()

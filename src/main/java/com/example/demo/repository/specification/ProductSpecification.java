@@ -7,7 +7,9 @@ import java.math.BigDecimal;
 
 public class ProductSpecification {
     public static Specification<Product> hasName(String name) {
-        return (root, query, cb) -> (name == null || name.isEmpty()) ? null : cb.like(root.get("name").as(String.class), "%" + name.toLowerCase() + "%");
+        return (root, query, cb) -> (name == null || name.trim().isEmpty()) 
+                ? null 
+                : cb.like(cb.lower(root.get("name").as(String.class)), "%" + name.trim().toLowerCase() + "%");
     }
 
     public static Specification<Product> hasCategory(Long categoryId) {
@@ -16,7 +18,7 @@ public class ProductSpecification {
 
     public static Specification<Product> hasPrice(BigDecimal minPrice, BigDecimal maxPrice) {
         return (root, query, cb) -> {
-            if (minPrice == null & maxPrice == null) {
+            if (minPrice == null && maxPrice == null) {
                 return null;
             }
             if (minPrice != null && maxPrice != null) {
