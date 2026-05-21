@@ -44,6 +44,8 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/api/v1/promotion-banners/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/products/import-excel").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/import-excel/template").hasRole("ADMIN")
                         .requestMatchers("/api/v1/users/me/**").authenticated()
                         .requestMatchers("/error").permitAll()
 

@@ -7,17 +7,22 @@ import com.example.demo.dto.response.ApiResponse;
 import com.example.demo.dto.response.PageResponse;
 import com.example.demo.dto.response.ProductResponse;
 import com.example.demo.security.UserPrincipal;
+import com.example.demo.service.ExcelImportService;
 import com.example.demo.service.ProductLikeService;
 import com.example.demo.service.ProductLikeService.ProductLikeSummary;
 import com.example.demo.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +32,7 @@ import java.util.Map;
 public class ProductController {
     private final ProductService productService;
     private final ProductLikeService productLikeService;
+    private final ExcelImportService excelImportService;
 
     @PostMapping("/{id}/like")
     public ResponseEntity<ApiResponse<Map<String, Object>>> likeProduct(
@@ -126,5 +132,30 @@ public class ProductController {
                         .message("Tim kiem thanh cong")
                         .data(productService.search(request, pageable, currentUser != null ? currentUser.getId() : null))
                         .build());
+    }
+
+    @PostMapping("/import-excel")
+    public ResponseEntity<ApiResponse<ExcelImportService.ExcelImportResult>> importFromExcel(
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        ExcelImportService.ExcelImportResult result = excelImportService.importProducts(file);
+        String message = String.format("Import hoàn tất: %d/%d sản phẩm thành công",
+                result.successCount(), result.totalRows());
+        return ResponseEntity.ok(
+                ApiResponse.<ExcelImportService.ExcelImportResult>builder()
+                        .status(HttpStatus.OK.value())
+                        .message(message)
+                        .data(result)
+                        .build()
+        );
+    }
+
+    @GetMapping("/import-excel/template")
+    public ResponseEntity<byte[]> downloadTemplate() throws IOException {
+        byte[] template = excelImportService.generateTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentDispositionFormData("attachment", "product_import_template.xlsx");
+        return ResponseEntity.ok().headers(headers).body(template);
     }
 }
