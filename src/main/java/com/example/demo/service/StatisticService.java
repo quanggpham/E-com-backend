@@ -26,10 +26,10 @@ public class StatisticService {
 
     public OverviewStatisticResponse getOverviewStatistic(OrderStatus status, LocalDate startDate, LocalDate endDate) {
         if (startDate == null && endDate == null) {
-            startDate = LocalDate.now().withDayOfMonth(1);
+            startDate = LocalDate.now().minusDays(30);
             endDate = LocalDate.now();
         } else if (startDate == null) {
-            startDate = endDate.withDayOfMonth(1);
+            startDate = endDate.minusDays(30);
         } else if (endDate == null) {
             endDate = LocalDate.now();
         }
@@ -50,10 +50,10 @@ public class StatisticService {
 
     public List<RevenueByDateProjection> getRevenueByDate(LocalDate startDate, LocalDate endDate) {
         if (startDate == null && endDate == null) {
-            startDate = LocalDate.now().withDayOfMonth(1);
+            startDate = LocalDate.now().minusDays(30);
             endDate = LocalDate.now();
         } else if (startDate == null) {
-            startDate = endDate.withDayOfMonth(1);
+            startDate = endDate.minusDays(30);
         } else if (endDate == null) {
             endDate = LocalDate.now();
         }
@@ -70,10 +70,10 @@ public class StatisticService {
 
     public List<TopProductProjection> getTopSellingProducts(int limit , LocalDate startDate, LocalDate endDate) {
         if (startDate == null && endDate == null) {
-            startDate = LocalDate.now().withDayOfMonth(1);
+            startDate = LocalDate.now().minusDays(30);
             endDate = LocalDate.now();
         } else if (startDate == null) {
-            startDate = endDate.withDayOfMonth(1);
+            startDate = endDate.minusDays(30);
         } else if (endDate == null) {
             endDate = LocalDate.now();
         }
