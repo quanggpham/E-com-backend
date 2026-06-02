@@ -88,7 +88,6 @@ public class ReviewService {
         validateReviewEligibility(userId, orderDetail);
 
         String sanitizedContent = reviewModerationService.sanitize(request.getContent());
-        boolean containsBannedKeyword = reviewModerationService.containsBannedKeyword(request.getContent());
 
         Review review = Review.builder()
                 .user(user)
@@ -96,8 +95,8 @@ public class ReviewService {
                 .orderDetail(orderDetail)
                 .rating(request.getRating())
                 .content(sanitizedContent)
-                .status(containsBannedKeyword ? ReviewStatus.REJECTED : ReviewStatus.PENDING)
-                .rejectionReason(containsBannedKeyword ? "Noi dung chua tu khoa bi cam" : null)
+                .status(ReviewStatus.APPROVED)
+                .rejectionReason(null)
                 .build();
 
         Review savedReview = reviewRepository.saveAndFlush(review);
