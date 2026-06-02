@@ -28,6 +28,7 @@ public class BannerResponse {
 
     private LocalDateTime startDate;
     private LocalDateTime endDate;
+    private Long productId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -45,4 +45,6 @@ public class BannerRequest {
     private LocalDateTime startDate;
 
     private LocalDateTime endDate;
+
+    private Long productId;
 }

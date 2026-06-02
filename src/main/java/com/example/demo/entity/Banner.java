@@ -72,6 +72,9 @@ public class Banner {
     @Column(name = "end_date")
     private LocalDateTime endDate;
 
+    @Column(name = "product_id")
+    private Long productId;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
