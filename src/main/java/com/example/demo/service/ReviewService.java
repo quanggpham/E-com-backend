@@ -238,13 +238,44 @@ public class ReviewService {
     }
 
     private ReviewResponse toResponse(Review review) {
+        String userName = null;
+        Long userId = null;
+        try {
+            if (review.getUser() != null) {
+                userId = review.getUser().getId();
+                userName = review.getUser().getFullName();
+            }
+        } catch (jakarta.persistence.EntityNotFoundException | org.hibernate.ObjectNotFoundException e) {
+            userName = "Người dùng không tồn tại";
+        }
+
+        Long productId = null;
+        String productName = null;
+        try {
+            if (review.getProduct() != null) {
+                productId = review.getProduct().getId();
+                productName = review.getProduct().getName();
+            }
+        } catch (jakarta.persistence.EntityNotFoundException | org.hibernate.ObjectNotFoundException e) {
+            productName = "Sản phẩm không tồn tại";
+        }
+
+        Long orderItemId = null;
+        try {
+            if (review.getOrderDetail() != null) {
+                orderItemId = review.getOrderDetail().getId();
+            }
+        } catch (jakarta.persistence.EntityNotFoundException | org.hibernate.ObjectNotFoundException e) {
+            // orderDetail not found
+        }
+
         return ReviewResponse.builder()
                 .id(review.getId())
-                .productId(review.getProduct() != null ? review.getProduct().getId() : null)
-                .productName(review.getProduct() != null ? review.getProduct().getName() : null)
-                .orderItemId(review.getOrderDetail() != null ? review.getOrderDetail().getId() : null)
-                .userId(review.getUser() != null ? review.getUser().getId() : null)
-                .userName(review.getUser() != null ? review.getUser().getFullName() : null)
+                .productId(productId)
+                .productName(productName)
+                .orderItemId(orderItemId)
+                .userId(userId)
+                .userName(userName)
                 .rating(review.getRating())
                 .content(review.getContent())
                 .status(review.getStatus())
